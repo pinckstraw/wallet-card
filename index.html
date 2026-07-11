@@ -64,25 +64,15 @@
     font-size:17px; cursor:pointer; color:var(--ink);
   }
 
-  .overview-pill{
-    display:flex; align-items:center; justify-content:space-between;
-    background:var(--ink); color:var(--cream); border-radius:20px;
-    padding:12px 18px; margin-bottom:16px;
-  }
-  .overview-pill .label{font-size:12px; color:#E9C9D8; font-weight:600;}
-  .overview-pill .value{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:19px;}
-
-  /* Card hero blocks (one per credit card) */
   .card-hero{
     border-radius:var(--radius-lg);
     padding:20px 20px 18px;
     color:var(--ink);
-    margin-bottom:14px;
+    margin-bottom:16px;
     position:relative;
   }
   .card-hero .ch-top{display:flex; justify-content:space-between; align-items:flex-start;}
   .card-hero .ch-name{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px;}
-  .card-hero .ch-tag{font-size:11px; font-weight:600; opacity:.65; margin-top:2px;}
   .card-hero .ch-amount{
     font-family:'JetBrains Mono',monospace; font-weight:700; font-size:32px; margin-top:10px; line-height:1;
   }
@@ -95,7 +85,6 @@
   }
   .pay-btn:active{transform:scale(.97);}
 
-  /* Quick add card */
   .add-card{
     background:var(--card); border-radius:var(--radius-lg);
     padding:18px; margin-bottom:16px; border:1px solid var(--line);
@@ -106,12 +95,12 @@
   .field-row{display:flex; gap:10px; margin-bottom:10px;}
   .field{flex:1; display:flex; flex-direction:column; gap:5px;}
   label{font-size:11px; font-weight:600; color:var(--ink-soft);}
-  input[type=number], input[type=text], input[type=date], select{
+  input[type=number], input[type=text], input[type=date]{
     border:1.5px solid var(--line); border-radius:var(--radius-sm);
     padding:10px 12px; font-size:15px; font-family:'Inter',sans-serif;
     background:#FFFCFA; color:var(--ink); width:100%;
   }
-  input:focus, select:focus{outline:2px solid var(--blue); border-color:var(--blue);}
+  input:focus{outline:2px solid var(--blue); border-color:var(--blue);}
   .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
   .chip{
     padding:7px 13px; border-radius:20px; font-size:13px; font-weight:600;
@@ -125,7 +114,6 @@
   }
   .primary-btn:active{transform:scale(.98);}
 
-  /* Tabs */
   .tabs{display:flex; gap:5px; margin-bottom:14px; background:var(--card); padding:5px; border-radius:16px; border:1px solid var(--line);}
   .tab{
     flex:1; text-align:center; padding:9px 2px; border-radius:12px; font-size:13px;
@@ -136,7 +124,6 @@
   .panel{display:none;}
   .panel.active{display:block;}
 
-  /* Expense list */
   .list-item{
     background:var(--card); border-radius:var(--radius-md); padding:14px 14px;
     display:flex; align-items:center; gap:12px; margin-bottom:10px; border:1px solid var(--line);
@@ -144,7 +131,6 @@
   .cat-dot{width:38px;height:38px;border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--ink);}
   .li-main{flex:1; min-width:0;}
   .li-cat{font-size:12px; font-weight:600; color:var(--ink-soft); display:flex; gap:6px; align-items:center;}
-  .li-card-badge{font-size:10px; font-weight:700; padding:1px 7px; border-radius:8px; background:var(--cream); color:var(--ink);}
   .li-note{font-size:14px; font-weight:500; margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .li-date{font-size:11px; color:var(--ink-soft); margin-top:2px;}
   .li-amount{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; white-space:nowrap;}
@@ -160,7 +146,6 @@
   .empty-state .emoji{font-size:32px; margin-bottom:8px;}
   .empty-state p{font-size:13px; margin:4px 0 0; line-height:1.6;}
 
-  /* Manage rows (categories & cards) */
   .manage-row{
     background:var(--card); border-radius:var(--radius-md); padding:12px 14px;
     display:flex; align-items:center; gap:12px; margin-bottom:8px; border:1px solid var(--line);
@@ -171,7 +156,6 @@
   .color-swatches div{width:24px;height:24px;border-radius:50%; cursor:pointer; border:2px solid transparent;}
   .color-swatches div.selected{border-color:var(--ink);}
 
-  /* Chart panel */
   .chart-card{
     background:var(--card); border-radius:var(--radius-lg); padding:20px; border:1px solid var(--line); margin-bottom:16px;
   }
@@ -222,15 +206,15 @@
     <div class="icon-btn" id="settingsBtn">⚙</div>
   </div>
 
-  <div class="overview-pill">
-    <span class="label">全部卡片合計未繳</span>
-    <span class="value" id="overviewTotal">NT$0</span>
+  <div class="card-hero" style="background:var(--pink);">
+    <div class="ch-top">
+      <div><div class="ch-name">總計待收款</div></div>
+    </div>
+    <div class="ch-amount"><small>NT$</small><span id="heroTotal">0</span></div>
+    <div class="ch-sub" id="heroLastPay">尚未有繳費紀錄</div>
+    <button class="pay-btn" id="globalPayBtn">登記繳費 / 扣款</button>
   </div>
 
-  <!-- one hero block per card, rendered by JS -->
-  <div id="cardHeroList"></div>
-
-  <!-- Quick add -->
   <div class="add-card">
     <h2>記一筆消費</h2>
     <div class="field-row">
@@ -247,19 +231,15 @@
       <label>備註</label>
       <input type="text" id="noteInput" placeholder="例如：午餐、捷運、網購…">
     </div>
-    <label style="margin-bottom:8px; display:block;">刷哪張卡</label>
-    <div class="chip-row" id="cardPicker"></div>
     <label style="margin-bottom:8px; display:block;">分類</label>
     <div class="chip-row" id="catPicker"></div>
     <button class="primary-btn" id="addExpenseBtn">＋ 加入紀錄</button>
   </div>
 
-  <!-- Tabs -->
   <div class="tabs">
     <div class="tab active" data-tab="list">紀錄</div>
     <div class="tab" data-tab="chart">分析</div>
     <div class="tab" data-tab="categories">分類</div>
-    <div class="tab" data-tab="cards">卡片</div>
   </div>
 
   <div class="panel active" id="panel-list"></div>
@@ -267,7 +247,6 @@
   <div class="panel" id="panel-chart">
     <div class="chart-card">
       <h2>分類佔比</h2>
-      <div class="chip-row" id="chartCardFilter" style="margin-bottom:14px;"></div>
       <canvas id="pieChart" height="220"></canvas>
       <div id="breakdownList" style="margin-top:16px;"></div>
     </div>
@@ -287,25 +266,10 @@
     <div id="categoryList"></div>
   </div>
 
-  <div class="panel" id="panel-cards">
-    <div class="add-card">
-      <h2>新增卡片</h2>
-      <div class="field" style="margin-bottom:10px;">
-        <label>卡片名稱</label>
-        <input type="text" id="newCardName" placeholder="例如：國泰CUBE、玉山Ubear…">
-      </div>
-      <label style="margin-bottom:6px; display:block;">顏色</label>
-      <div class="color-swatches" id="newCardColors"></div>
-      <button class="primary-btn" id="addCardBtn">＋ 新增卡片</button>
-    </div>
-    <div id="cardManageList"></div>
-  </div>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
-<!-- Edit expense modal -->
 <div class="modal-overlay" id="editModalOverlay">
   <div class="modal">
     <h3>編輯這筆消費</h3>
@@ -323,8 +287,6 @@
       <label>備註</label>
       <input type="text" id="editNote">
     </div>
-    <label style="margin-bottom:8px; display:block;">刷哪張卡</label>
-    <div class="chip-row" id="editCardPicker"></div>
     <label style="margin-bottom:8px; display:block;">分類</label>
     <div class="chip-row" id="editCatPicker"></div>
     <div class="modal-actions">
@@ -334,10 +296,9 @@
   </div>
 </div>
 
-<!-- Payment modal -->
 <div class="modal-overlay" id="payModalOverlay">
   <div class="modal">
-    <h3 id="payModalTitle">登記已繳金額</h3>
+    <h3>登記已繳納金額</h3>
     <div class="hint" id="payModalHint"></div>
     <div class="field-row">
       <div class="field">
@@ -360,7 +321,6 @@
   </div>
 </div>
 
-<!-- Settings modal -->
 <div class="modal-overlay" id="settingsModalOverlay">
   <div class="modal">
     <h3>連接你的 Google 試算表</h3>
@@ -384,7 +344,6 @@
 <script>
 (function(){
 
-  const PALETTE_ROTATION = ['#FF84BA', '#FFDF82', '#99C2FF', '#FFEFE3', '#C9A8FF', '#8FE3C4'];
   const CATEGORY_COLORS = ['#FF84BA','#99C2FF','#FFDF82','#C9A8FF','#8FE3C4','#FFB199','#F4A65B','#7FB2E5'];
 
   let state = {
@@ -392,16 +351,10 @@
     token: localStorage.getItem('walletcard_token') || '',
     expenses: [],
     categories: [],
-    cards: [],
     selectedCat: null,
-    selectedCard: null,
     editingId: null,
     editSelectedCat: null,
-    editSelectedCard: null,
-    newCatColor: CATEGORY_COLORS[0],
-    newCardColor: PALETTE_ROTATION[0],
-    payingCardId: null,
-    chartCardFilter: 'all'
+    newCatColor: CATEGORY_COLORS[0]
   };
 
   const $ = (id) => document.getElementById(id);
@@ -416,7 +369,6 @@
   function fmt(n){ return Math.round(n).toLocaleString('zh-TW'); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
 
-  // ---------- Networking ----------
   async function apiGet(){
     if(!state.webhookUrl) return;
     try{
@@ -450,9 +402,6 @@
   function applyData(data){
     state.expenses = data.expenses || state.expenses;
     state.categories = data.categories || state.categories;
-    state.cards = data.cards || state.cards;
-    if(!state.selectedCard && state.cards.length) state.selectedCard = state.cards[0].id;
-    if(!state.editSelectedCard && state.cards.length) state.editSelectedCard = state.cards[0].id;
   }
 
   function setConn(ok, unauthorized){
@@ -464,71 +413,31 @@
       : '<span class="status-dot" style="background:#E85A5A;"></span>連線失敗';
   }
 
-  // ---------- Helpers ----------
   function categoryById(id){ return state.categories.find(c => c.id === id) || { name:'未分類', color:'#ccc' }; }
-  function cardById(id){ return state.cards.find(c => c.id === id) || { id:'', name:'未指定卡片', color:'#D9D2CE' }; }
 
-  function cardBalance(cardId){
-    let bal = 0;
-    state.expenses.forEach(e => {
-      if(e.cardId !== cardId) return;
-      bal += e.type === 'payment' ? -Number(e.amount) : Number(e.amount);
-    });
-    return bal;
+  function totalBalance(){
+    return state.expenses.reduce((sum, e) => sum + (e.type === 'payment' ? -Number(e.amount) : Number(e.amount)), 0);
   }
 
-  function lastPaymentDate(cardId){
-    const p = state.expenses.filter(e => e.type === 'payment' && e.cardId === cardId);
+  function globalLastPaymentDate(){
+    const p = state.expenses.filter(e => e.type === 'payment');
     if(p.length === 0) return null;
     return p.reduce((a,b)=> (a.createdAt||a.date) > (b.createdAt||b.date) ? a : b).date;
   }
 
-  // "unpaid" expenses for analysis = all expense-type rows minus, per card, whatever's been paid off is
-  // conceptually already folded into the running balance; for the pie chart we approximate unpaid
-  // composition using all expense rows not yet exceeded by cumulative payments (simple & good enough
-  // for everyday use): here we just use all expense-type rows for the selected scope, since balances
-  // are running totals rather than tied to specific expense rows.
-  function scopedExpenseRows(cardFilter){
-    return state.expenses.filter(e => e.type === 'expense' && (cardFilter === 'all' || e.cardId === cardFilter));
-  }
-
-  // ---------- Rendering ----------
   function renderAll(){
-    renderOverview();
-    renderCardHeroes();
+    renderHero();
     renderPickers();
     renderList();
     renderCategories();
-    renderCards();
-    renderChartFilter();
     renderChart();
   }
 
-  function renderOverview(){
-    const total = state.cards.reduce((s,c)=> s + Math.max(cardBalance(c.id),0), 0);
-    $('overviewTotal').textContent = 'NT$' + fmt(total);
-  }
-
-  function renderCardHeroes(){
-    const el = $('cardHeroList');
-    if(state.cards.length === 0){
-      el.innerHTML = '<div class="empty-state"><div class="emoji">💳</div><p>還沒有任何卡片<br>先到下面「卡片」分頁新增一張吧</p></div>';
-      return;
-    }
-    el.innerHTML = state.cards.map((c,i) => {
-      const bal = cardBalance(c.id);
-      const last = lastPaymentDate(c.id);
-      const bgColor = c.color || PALETTE_ROTATION[i % PALETTE_ROTATION.length];
-      return '<div class="card-hero" style="background:'+bgColor+';">'
-        + '<div class="ch-top">'
-          + '<div><div class="ch-name">'+c.name+'</div><div class="ch-tag">目前未繳金額</div></div>'
-        + '</div>'
-        + '<div class="ch-amount"><small>NT$</small>'+fmt(Math.max(bal,0))+'</div>'
-        + '<div class="ch-sub">'+(last ? '上次繳費：'+last : '尚未有繳費紀錄')+'</div>'
-        + '<button class="pay-btn" data-pay="'+c.id+'">登記已繳金額</button>'
-      + '</div>';
-    }).join('');
-    el.querySelectorAll('[data-pay]').forEach(btn => btn.onclick = () => openPayModal(btn.dataset.pay));
+  function renderHero(){
+    const bal = totalBalance();
+    const last = globalLastPaymentDate();
+    $('heroTotal').textContent = fmt(Math.max(bal, 0));
+    $('heroLastPay').textContent = last ? '上次繳費紀錄：' + last : '尚未有繳費紀錄';
   }
 
   function renderPickers(){
@@ -545,19 +454,6 @@
         el.appendChild(chip);
       });
     });
-    ['cardPicker','editCardPicker'].forEach(pid => {
-      const el = $(pid); el.innerHTML = '';
-      state.cards.forEach(c => {
-        const isEdit = pid === 'editCardPicker';
-        const sel = isEdit ? state.editSelectedCard : state.selectedCard;
-        const chip = document.createElement('div');
-        chip.className = 'chip' + (sel === c.id ? ' active' : '');
-        if(sel === c.id) chip.style.background = c.color;
-        chip.textContent = c.name;
-        chip.onclick = () => { if(isEdit) state.editSelectedCard = c.id; else state.selectedCard = c.id; renderPickers(); };
-        el.appendChild(chip);
-      });
-    });
   }
 
   function renderList(){
@@ -568,11 +464,10 @@
       return;
     }
     el.innerHTML = items.map(e => {
-      const card = cardById(e.cardId);
       if(e.type === 'payment'){
         return '<div class="list-item">'
           + '<div class="cat-dot" style="background:#DDEFE0;">✓</div>'
-          + '<div class="li-main"><div class="li-cat">繳費結清 <span class="li-card-badge">'+card.name+'</span></div>'
+          + '<div class="li-main"><div class="li-cat">繳納紀錄</div>'
           + (e.note ? '<div class="li-note">'+e.note+'</div>' : '')
           + '<div class="li-date">'+e.date+'</div></div>'
           + '<div class="li-amount payment">-NT$'+fmt(e.amount)+'</div>'
@@ -583,7 +478,7 @@
       return '<div class="list-item">'
         + '<div class="cat-dot" style="background:'+cat.color+'55;">'+cat.name.slice(0,1)+'</div>'
         + '<div class="li-main">'
-          + '<div class="li-cat">'+cat.name+' <span class="li-card-badge">'+card.name+'</span></div>'
+          + '<div class="li-cat">'+cat.name+'</div>'
           + '<div class="li-note">'+(e.note || '（無備註）')+'</div>'
           + '<div class="li-date">'+e.date+'</div>'
         + '</div>'
@@ -618,43 +513,9 @@
     });
   }
 
-  function renderCards(){
-    const el = $('cardManageList');
-    el.innerHTML = state.cards.map(c => (
-      '<div class="manage-row">'
-      + '<div class="color-dot-lg" style="background:'+c.color+'"></div>'
-      + '<input type="text" value="'+c.name+'" data-cardname="'+c.id+'">'
-      + '<button data-delcard="'+c.id+'" style="border:none;background:transparent;color:var(--ink-soft);font-size:15px;cursor:pointer;">✕</button>'
-      + '</div>'
-    )).join('');
-    el.querySelectorAll('[data-cardname]').forEach(inp => inp.onchange = () => {
-      const c = cardById(inp.dataset.cardname);
-      apiPost('updateCard', { id: inp.dataset.cardname, name: inp.value, color: c.color });
-    });
-    el.querySelectorAll('[data-delcard]').forEach(btn => btn.onclick = () => {
-      if(confirm('刪除這張卡片？已使用這張卡的紀錄會保留，但會顯示為未指定卡片。')){
-        apiPost('deleteCard', { id: btn.dataset.delcard }).then(()=> toast('卡片已刪除'));
-      }
-    });
-  }
-
-  function renderChartFilter(){
-    const el = $('chartCardFilter');
-    const options = [{id:'all', name:'全部卡片'}].concat(state.cards);
-    el.innerHTML = '';
-    options.forEach(o => {
-      const chip = document.createElement('div');
-      chip.className = 'chip' + (state.chartCardFilter === o.id ? ' active' : '');
-      if(state.chartCardFilter === o.id) chip.style.background = o.color || 'var(--yellow)';
-      chip.textContent = o.name;
-      chip.onclick = () => { state.chartCardFilter = o.id; renderChartFilter(); renderChart(); };
-      el.appendChild(chip);
-    });
-  }
-
   let chartInstance = null;
   function renderChart(){
-    const rows = scopedExpenseRows(state.chartCardFilter);
+    const rows = state.expenses.filter(e => e.type === 'expense');
     const byCat = {};
     rows.forEach(e => { byCat[e.categoryId] = (byCat[e.categoryId]||0) + Number(e.amount); });
     const catIds = Object.keys(byCat).sort((a,b)=> byCat[b]-byCat[a]);
@@ -666,7 +527,7 @@
     if(chartInstance) chartInstance.destroy();
 
     if(values.length === 0){
-      $('breakdownList').innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>這個範圍目前沒有消費紀錄</p></div>';
+      $('breakdownList').innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>目前沒有消費紀錄可供分析</p></div>';
       return;
     }
     chartInstance = new Chart(ctx, {
@@ -684,13 +545,11 @@
     )).join('');
   }
 
-  // ---------- Actions ----------
   function openEdit(id){
     const e = state.expenses.find(x => x.id === id);
     if(!e) return;
     state.editingId = id;
     state.editSelectedCat = e.categoryId;
-    state.editSelectedCard = e.cardId;
     $('editAmount').value = e.amount;
     $('editDate').value = e.date;
     $('editNote').value = e.note || '';
@@ -702,29 +561,24 @@
     if(confirm('刪除這筆紀錄？')){ apiPost('deleteExpense', { id }).then(()=> toast('已刪除')); }
   }
 
-  function openPayModal(cardId){
-    state.payingCardId = cardId;
-    const c = cardById(cardId);
-    const bal = cardBalance(cardId);
-    $('payModalTitle').textContent = '登記已繳金額 · ' + c.name;
-    $('payModalHint').textContent = '目前未繳約 NT$' + fmt(Math.max(bal,0)) + '，可以只填部分金額';
+  $('globalPayBtn').onclick = () => {
+    const bal = totalBalance();
+    $('payModalHint').textContent = '目前待收款約 NT$' + fmt(Math.max(bal,0)) + '，可以只填部分金額';
     $('payAmount').value = '';
     $('payDate').value = todayStr();
     $('payNote').value = '';
     $('payModalOverlay').classList.add('show');
-  }
+  };
 
-  // ---------- Init events ----------
   $('dateInput').value = todayStr();
 
   $('addExpenseBtn').onclick = () => {
     const amount = parseFloat($('amountInput').value);
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
-    if(!state.selectedCard){ toast('請選擇刷哪張卡'); return; }
     if(!state.selectedCat){ toast('請選擇一個分類'); return; }
     apiPost('addExpense', {
       amount, date: $('dateInput').value, note: $('noteInput').value,
-      categoryId: state.selectedCat, cardId: state.selectedCard, type: 'expense'
+      categoryId: state.selectedCat, type: 'expense'
     }).then(res => {
       if(res){ $('amountInput').value=''; $('noteInput').value=''; $('dateInput').value = todayStr(); toast('已加入紀錄'); }
     });
@@ -745,7 +599,7 @@
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
     apiPost('updateExpense', {
       id: state.editingId, amount, date: $('editDate').value,
-      note: $('editNote').value, categoryId: state.editSelectedCat, cardId: state.editSelectedCard, type:'expense'
+      note: $('editNote').value, categoryId: state.editSelectedCat, type:'expense'
     }).then(()=> { $('editModalOverlay').classList.remove('show'); toast('已儲存變更'); });
   };
 
@@ -755,9 +609,9 @@
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
     apiPost('addExpense', {
       amount, date: $('payDate').value, note: $('payNote').value,
-      categoryId: '', cardId: state.payingCardId, type: 'payment'
+      categoryId: '', type: 'payment'
     }).then(res => {
-      if(res){ $('payModalOverlay').classList.remove('show'); toast('已登記繳費'); }
+      if(res){ $('payModalOverlay').classList.remove('show'); toast('已登記繳納金額'); }
     });
   };
 
@@ -773,17 +627,11 @@
     });
   }
   initColorSwatches('newCatColors', CATEGORY_COLORS, ()=>state.newCatColor, (c)=>state.newCatColor=c);
-  initColorSwatches('newCardColors', PALETTE_ROTATION, ()=>state.newCardColor, (c)=>state.newCardColor=c);
 
   $('addCatBtn').onclick = () => {
     const name = $('newCatName').value.trim();
     if(!name){ toast('請輸入分類名稱'); return; }
     apiPost('addCategory', { name, color: state.newCatColor }).then(res => { if(res){ $('newCatName').value=''; toast('已新增分類'); } });
-  };
-  $('addCardBtn').onclick = () => {
-    const name = $('newCardName').value.trim();
-    if(!name){ toast('請輸入卡片名稱'); return; }
-    apiPost('addCard', { name, color: state.newCardColor }).then(res => { if(res){ $('newCardName').value=''; toast('已新增卡片'); } });
   };
 
   $('settingsBtn').onclick = () => {
@@ -808,7 +656,6 @@
     ov.addEventListener('click', (e) => { if(e.target === ov) ov.classList.remove('show'); });
   });
 
-  // ---------- Boot ----------
   if(state.webhookUrl){ apiGet(); }
   else { renderAll(); setTimeout(()=> $('settingsBtn').click(), 400); }
 
