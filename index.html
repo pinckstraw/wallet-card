@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>錢包色卡 · 消費紀錄器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --pink:#FF84BA;
+    --pink-deep:#E85A9B;
+    --yellow:#FFDF82;
+    --blue:#99C2FF;
+    --cream:#FFEFE3;
+    --bg:#FFF8F1;
+    --card:#FFFFFF;
+    --ink:#4A2E3D;
+    --ink-soft:#8A6E7D;
+    --line:#F1E2DD;
+    --danger:#E85A5A;
+    --radius-lg:26px;
+    --radius-md:18px;
+    --radius-sm:12px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+  }
+  #app{
+    width:100%;
+    max-width:480px;
+    min-height:100vh;
+    background:var(--bg);
+    padding:20px 18px 100px;
+    position:relative;
+  }
+  .top-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:18px;
+  }
+  .brand{
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:-0.3px;
+  }
+  .brand span{color:var(--pink-deep);}
+  .icon-btn{
+    width:38px;height:38px;border-radius:50%;
+    background:var(--card);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+    font-size:17px; cursor:pointer; color:var(--ink);
+  }
+
+  /* Hero balance card */
+  .hero{
+    background:var(--ink);
+    border-radius:var(--radius-lg);
+    padding:26px 24px 22px;
+    color:var(--cream);
+    position:relative;
+    overflow:hidden;
+    margin-bottom:16px;
+  }
+  .hero-label{
+    font-size:13px; font-weight:600; letter-spacing:.4px;
+    color:#E9C9D8; margin-bottom:6px;
+  }
+  .hero-amount{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:40px;
+    line-height:1.1;
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+  }
+  .hero-amount small{font-size:18px; font-weight:600; color:#E9C9D8;}
+  .hero-sub{font-size:12px; color:#C9A5B8; margin-top:6px;}
+  /* signature: colorhunt-style swatch bar showing category proportion */
+  .swatch-bar{
+    display:flex; height:14px; border-radius:8px; overflow:hidden;
+    margin-top:18px; background:#3A1F2C;
+  }
+  .swatch-bar div{height:100%;}
+  .swatch-legend{
+    display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:10px;
+  }
+  .swatch-legend .item{
+    display:flex; align-items:center; gap:5px; font-size:11px; color:#E9C9D8;
+  }
+  .swatch-legend .dot{width:8px;height:8px;border-radius:50%;}
+  .settle-btn{
+    margin-top:18px; width:100%; border:none; border-radius:var(--radius-md);
+    background:var(--pink); color:var(--ink); font-family:'Baloo 2',sans-serif;
+    font-weight:700; font-size:15px; padding:13px; cursor:pointer;
+  }
+  .settle-btn:active{transform:scale(.98);}
+
+  /* Quick add card */
+  .add-card{
+    background:var(--card); border-radius:var(--radius-lg);
+    padding:18px; margin-bottom:16px; border:1px solid var(--line);
+  }
+  .add-card h2{
+    font-family:'Baloo 2',sans-serif; font-size:16px; margin:0 0 12px;
+  }
+  .field-row{display:flex; gap:10px; margin-bottom:10px;}
+  .field{flex:1; display:flex; flex-direction:column; gap:5px;}
+  label{font-size:11px; font-weight:600; color:var(--ink-soft);}
+  input[type=number], input[type=text], input[type=date], select{
+    border:1.5px solid var(--line); border-radius:var(--radius-sm);
+    padding:10px 12px; font-size:15px; font-family:'Inter',sans-serif;
+    background:#FFFCFA; color:var(--ink); width:100%;
+  }
+  input:focus, select:focus{outline:2px solid var(--blue); border-color:var(--blue);}
+  .cat-picker{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .cat-chip{
+    padding:7px 13px; border-radius:20px; font-size:13px; font-weight:600;
+    border:1.5px solid var(--line); background:#fff; cursor:pointer; color:var(--ink-soft);
+  }
+  .cat-chip.active{border-color:transparent; color:var(--ink);}
+  .primary-btn{
+    width:100%; border:none; border-radius:var(--radius-md);
+    background:var(--ink); color:var(--cream); font-family:'Baloo 2',sans-serif;
+    font-weight:700; font-size:15px; padding:13px; cursor:pointer;
+  }
+  .primary-btn:active{transform:scale(.98);}
+  .primary-btn:disabled{opacity:.5;}
+
+  /* Tabs */
+  .tabs{display:flex; gap:6px; margin-bottom:14px; background:var(--card); padding:5px; border-radius:16px; border:1px solid var(--line);}
+  .tab{
+    flex:1; text-align:center; padding:9px 4px; border-radius:12px; font-size:13px;
+    font-weight:600; color:var(--ink-soft); cursor:pointer;
+  }
+  .tab.active{background:var(--yellow); color:var(--ink);}
+
+  .panel{display:none;}
+  .panel.active{display:block;}
+
+  /* Expense list */
+  .list-item{
+    background:var(--card); border-radius:var(--radius-md); padding:14px 14px;
+    display:flex; align-items:center; gap:12px; margin-bottom:10px; border:1px solid var(--line);
+  }
+  .cat-dot{width:38px;height:38px;border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--ink);}
+  .li-main{flex:1; min-width:0;}
+  .li-cat{font-size:12px; font-weight:600; color:var(--ink-soft);}
+  .li-note{font-size:14px; font-weight:500; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .li-date{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .li-amount{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:16px; white-space:nowrap;}
+  .li-amount.payment{color:#4C9A6A;}
+  .li-actions{display:flex; gap:6px;}
+  .li-actions button{
+    border:none; background:var(--cream); width:28px; height:28px; border-radius:8px;
+    font-size:13px; cursor:pointer; color:var(--ink);
+  }
+  .empty-state{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+  }
+  .empty-state .emoji{font-size:32px; margin-bottom:8px;}
+  .empty-state p{font-size:13px; margin:4px 0 0; line-height:1.6;}
+
+  /* Categories */
+  .cat-row{
+    background:var(--card); border-radius:var(--radius-md); padding:12px 14px;
+    display:flex; align-items:center; gap:12px; margin-bottom:8px; border:1px solid var(--line);
+  }
+  .color-dot-lg{width:28px;height:28px;border-radius:50%; flex-shrink:0; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line);}
+  .cat-row input[type=text]{border:none; background:transparent; font-weight:600; font-size:14px; padding:2px 0;}
+  .color-swatches{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px;}
+  .color-swatches div{width:24px;height:24px;border-radius:50%; cursor:pointer; border:2px solid transparent;}
+  .color-swatches div.selected{border-color:var(--ink);}
+
+  /* Chart panel */
+  .chart-card{
+    background:var(--card); border-radius:var(--radius-lg); padding:20px; border:1px solid var(--line); margin-bottom:16px;
+  }
+  .chart-card h2{font-family:'Baloo 2',sans-serif; font-size:16px; margin:0 0 4px;}
+  .chart-card .range-note{font-size:12px; color:var(--ink-soft); margin-bottom:14px;}
+  .breakdown-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .breakdown-row:last-child{border-bottom:none;}
+  .breakdown-row .dot{width:10px;height:10px;border-radius:50%;}
+  .breakdown-row .name{flex:1; font-weight:600;}
+  .breakdown-row .amt{font-family:'JetBrains Mono',monospace; font-weight:600;}
+
+  /* Settings */
+  .settings-card{
+    background:var(--card); border-radius:var(--radius-lg); padding:18px; border:1px solid var(--line); margin-bottom:16px;
+  }
+  .settings-card h2{font-family:'Baloo 2',sans-serif; font-size:16px; margin:0 0 6px;}
+  .settings-card p{font-size:12px; color:var(--ink-soft); line-height:1.6; margin:0 0 12px;}
+  .status-dot{width:8px;height:8px;border-radius:50%; display:inline-block; margin-right:6px;}
+  .status-line{font-size:12px; color:var(--ink-soft); display:flex; align-items:center; margin-top:10px;}
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--ink); color:var(--cream); padding:11px 20px; border-radius:20px;
+    font-size:13px; font-weight:600; z-index:50; opacity:0; pointer-events:none;
+    transition:opacity .25s, transform .25s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(-6px);}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(74,46,61,.45); z-index:100;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.show{display:flex;}
+  .modal{
+    background:var(--bg); width:100%; max-width:480px; border-radius:24px 24px 0 0;
+    padding:22px 20px 28px; max-height:85vh; overflow-y:auto;
+  }
+  .modal h3{font-family:'Baloo 2',sans-serif; margin:0 0 14px; font-size:17px;}
+  .modal-actions{display:flex; gap:10px; margin-top:16px;}
+  .modal-actions button{flex:1;}
+  .ghost-btn{
+    border:1.5px solid var(--line); background:#fff; border-radius:var(--radius-md);
+    padding:13px; font-weight:700; font-family:'Baloo 2',sans-serif; font-size:14px; cursor:pointer; color:var(--ink-soft);
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="top-bar">
+    <div class="brand">錢包<span>色卡</span></div>
+    <div class="icon-btn" id="settingsBtn">⚙</div>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-label">本期累積消費</div>
+    <div class="hero-amount"><small>NT$</small><span id="balanceAmount">0</span></div>
+    <div class="hero-sub" id="lastSettleNote">尚未有繳費紀錄</div>
+    <div class="swatch-bar" id="swatchBar"></div>
+    <div class="swatch-legend" id="swatchLegend"></div>
+    <button class="settle-btn" id="settleBtn">✓ 我已繳費，結清本期</button>
+  </div>
+
+  <!-- Quick add -->
+  <div class="add-card">
+    <h2>記一筆消費</h2>
+    <div class="field-row">
+      <div class="field">
+        <label>金額</label>
+        <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input type="date" id="dateInput">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>備註</label>
+      <input type="text" id="noteInput" placeholder="例如：午餐、捷運、網購…">
+    </div>
+    <label style="margin-bottom:8px; display:block;">分類</label>
+    <div class="cat-picker" id="catPicker"></div>
+    <button class="primary-btn" id="addExpenseBtn">＋ 加入紀錄</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active" data-tab="list">消費紀錄</div>
+    <div class="tab" data-tab="chart">消費分析</div>
+    <div class="tab" data-tab="categories">分類管理</div>
+  </div>
+
+  <!-- List panel -->
+  <div class="panel active" id="panel-list"></div>
+
+  <!-- Chart panel -->
+  <div class="panel" id="panel-chart">
+    <div class="chart-card">
+      <h2>分類佔比</h2>
+      <div class="range-note">計算範圍：目前這期尚未結清的消費</div>
+      <canvas id="pieChart" height="220"></canvas>
+      <div id="breakdownList" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <!-- Categories panel -->
+  <div class="panel" id="panel-categories">
+    <div class="add-card">
+      <h2>新增分類</h2>
+      <div class="field" style="margin-bottom:10px;">
+        <label>名稱</label>
+        <input type="text" id="newCatName" placeholder="例如：寵物、醫療…">
+      </div>
+      <label style="margin-bottom:6px; display:block;">顏色</label>
+      <div class="color-swatches" id="newCatColors"></div>
+      <button class="primary-btn" id="addCatBtn">＋ 新增分類</button>
+    </div>
+    <div id="categoryList"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Edit expense modal -->
+<div class="modal-overlay" id="editModalOverlay">
+  <div class="modal">
+    <h3>編輯這筆消費</h3>
+    <div class="field-row">
+      <div class="field">
+        <label>金額</label>
+        <input type="number" id="editAmount" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input type="date" id="editDate">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>備註</label>
+      <input type="text" id="editNote">
+    </div>
+    <label style="margin-bottom:8px; display:block;">分類</label>
+    <div class="cat-picker" id="editCatPicker"></div>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="editCancelBtn">取消</button>
+      <button class="primary-btn" id="editSaveBtn">儲存變更</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="modal-overlay" id="settingsModalOverlay">
+  <div class="modal">
+    <h3>連接你的 Google 試算表</h3>
+    <div class="settings-card" style="border:none; padding:0; margin-bottom:0;">
+      <p>把你部署 Apps Script 後拿到的網址（結尾是 /exec）貼在下面，並填入你在 Code.gs 裡設定的通關密語，資料就會即時寫進你的試算表，而且別人沒有密語進不來。</p>
+      <div class="field" style="margin-bottom:12px;">
+        <label>Web App 網址</label>
+        <input type="text" id="webhookInput" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>通關密語</label>
+        <input type="text" id="tokenInput" placeholder="跟 Code.gs 裡 ACCESS_TOKEN 一樣的字串">
+      </div>
+      <div class="status-line" id="connStatus"><span class="status-dot" style="background:#ccc;"></span>尚未連接</div>
+    </div>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="settingsCancelBtn">關閉</button>
+      <button class="primary-btn" id="settingsSaveBtn">儲存並同步</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const CATEGORY_COLORS = ['#FF84BA','#99C2FF','#FFDF82','#C9A8FF','#8FE3C4','#FFB199','#F4A65B','#7FB2E5'];
+
+  let state = {
+    webhookUrl: localStorage.getItem('walletcard_webhook') || '',
+    token: localStorage.getItem('walletcard_token') || '',
+    expenses: [],
+    categories: [],
+    selectedCat: null,
+    editingId: null,
+    editSelectedCat: null,
+    newCatColor: CATEGORY_COLORS[0],
+    syncing: false
+  };
+
+  const $ = (id) => document.getElementById(id);
+
+  function toast(msg){
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(()=> t.classList.remove('show'), 2200);
+  }
+
+  function fmt(n){
+    return Math.round(n).toLocaleString('zh-TW');
+  }
+
+  function todayStr(){
+    const d = new Date();
+    return d.toISOString().slice(0,10);
+  }
+
+  // ---------- Networking ----------
+  async function apiGet(){
+    if(!state.webhookUrl) return;
+    setSyncing(true);
+    try{
+      const url = state.webhookUrl + (state.webhookUrl.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(state.token);
+      const res = await fetch(url, { method:'GET' });
+      const data = await res.json();
+      if(data.error === 'unauthorized'){
+        setConn(false, true);
+        toast('通關密語不對，請確認設定');
+        setSyncing(false);
+        return;
+      }
+      state.expenses = data.expenses || [];
+      state.categories = data.categories || [];
+      setConn(true);
+      renderAll();
+    }catch(err){
+      setConn(false);
+      toast('讀取失敗，請檢查網址或網路連線');
+    }
+    setSyncing(false);
+  }
+
+  async function apiPost(action, data){
+    if(!state.webhookUrl){
+      toast('請先在設定裡連接 Google 試算表');
+      return null;
+    }
+    setSyncing(true);
+    try{
+      const res = await fetch(state.webhookUrl, {
+        method:'POST',
+        headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, data, token: state.token })
+      });
+      const json = await res.json();
+      if(json.error === 'unauthorized'){
+        setConn(false, true);
+        toast('通關密語不對，請確認設定');
+        setSyncing(false);
+        return null;
+      }
+      state.expenses = json.expenses || state.expenses;
+      state.categories = json.categories || state.categories;
+      setConn(true);
+      renderAll();
+      return json.result;
+    }catch(err){
+      setConn(false);
+      toast('同步失敗，請檢查網路連線');
+      return null;
+    }finally{
+      setSyncing(false);
+    }
+  }
+
+  function setSyncing(v){
+    state.syncing = v;
+    $('settingsBtn').style.opacity = v ? '.4' : '1';
+  }
+
+  function setConn(ok, unauthorized){
+    const el = $('connStatus');
+    if(!state.webhookUrl){
+      el.innerHTML = '<span class="status-dot" style="background:#ccc;"></span>尚未連接';
+      return;
+    }
+    if(unauthorized){
+      el.innerHTML = '<span class="status-dot" style="background:#E85A5A;"></span>通關密語不對';
+      return;
+    }
+    el.innerHTML = ok
+      ? '<span class="status-dot" style="background:#4C9A6A;"></span>已連接，資料同步中'
+      : '<span class="status-dot" style="background:#E85A5A;"></span>連線失敗';
+  }
+
+  // ---------- Rendering ----------
+  function categoryById(id){
+    return state.categories.find(c => c.id === id) || { name:'未分類', color:'#ccc' };
+  }
+
+  function lastSettleDate(){
+    const payments = state.expenses.filter(e => e.type === 'payment');
+    if(payments.length === 0) return null;
+    return payments.reduce((a,b)=> a.date > b.date ? a : b).date;
+  }
+
+  function unpaidExpenses(){
+    const payments = state.expenses.filter(e => e.type === 'payment');
+    if(payments.length === 0) return state.expenses.filter(e => e.type === 'expense');
+    const lastPaymentTime = payments.reduce((max,p)=> p.createdAt > max ? p.createdAt : max, '');
+    return state.expenses.filter(e => e.type === 'expense' && e.createdAt > lastPaymentTime);
+  }
+
+  function renderAll(){
+    renderBalance();
+    renderCatPicker();
+    renderList();
+    renderCategories();
+    renderChart();
+  }
+
+  function renderBalance(){
+    const unpaid = unpaidExpenses();
+    const total = unpaid.reduce((s,e)=> s + Number(e.amount), 0);
+    $('balanceAmount').textContent = fmt(total);
+
+    const last = lastSettleDate();
+    $('lastSettleNote').textContent = last ? ('上次繳費：' + last) : '尚未有繳費紀錄，這是第一期';
+
+    // swatch bar by category proportion
+    const byCat = {};
+    unpaid.forEach(e => { byCat[e.categoryId] = (byCat[e.categoryId]||0) + Number(e.amount); });
+    const bar = $('swatchBar');
+    const legend = $('swatchLegend');
+    bar.innerHTML = '';
+    legend.innerHTML = '';
+    if(total === 0){
+      bar.innerHTML = '<div style="width:100%;background:#3A1F2C;"></div>';
+    }else{
+      Object.keys(byCat).sort((a,b)=> byCat[b]-byCat[a]).forEach(catId => {
+        const cat = categoryById(catId);
+        const pct = (byCat[catId]/total*100);
+        const seg = document.createElement('div');
+        seg.style.width = pct + '%';
+        seg.style.background = cat.color;
+        bar.appendChild(seg);
+        const item = document.createElement('div');
+        item.className = 'item';
+        item.innerHTML = '<span class="dot" style="background:'+cat.color+'"></span>' + cat.name + ' ' + Math.round(pct) + '%';
+        legend.appendChild(item);
+      });
+    }
+  }
+
+  function renderCatPicker(){
+    ['catPicker','editCatPicker'].forEach(pid => {
+      const el = $(pid);
+      el.innerHTML = '';
+      state.categories.forEach(cat => {
+        const chip = document.createElement('div');
+        const isEdit = pid === 'editCatPicker';
+        const sel = isEdit ? state.editSelectedCat : state.selectedCat;
+        chip.className = 'cat-chip' + (sel === cat.id ? ' active' : '');
+        if(sel === cat.id){ chip.style.background = cat.color; }
+        chip.textContent = cat.name;
+        chip.onclick = () => {
+          if(isEdit){ state.editSelectedCat = cat.id; } else { state.selectedCat = cat.id; }
+          renderCatPicker();
+        };
+        el.appendChild(chip);
+      });
+    });
+  }
+
+  function renderList(){
+    const el = $('panel-list');
+    const items = [...state.expenses].sort((a,b)=> (b.createdAt||b.date).localeCompare(a.createdAt||a.date));
+    if(items.length === 0){
+      el.innerHTML = '<div class="empty-state"><div class="emoji">🧾</div><p>還沒有任何消費紀錄<br>用上面的表單記下第一筆吧</p></div>';
+      return;
+    }
+    el.innerHTML = items.map(e => {
+      if(e.type === 'payment'){
+        return '<div class="list-item">'
+          + '<div class="cat-dot" style="background:#DDEFE0;">✓</div>'
+          + '<div class="li-main"><div class="li-cat">繳費結清</div><div class="li-date">'+e.date+'</div></div>'
+          + '<div class="li-amount payment">-NT$'+fmt(e.amount)+'</div>'
+          + '</div>';
+      }
+      const cat = categoryById(e.categoryId);
+      return '<div class="list-item">'
+        + '<div class="cat-dot" style="background:'+cat.color+'55;">'+cat.name.slice(0,1)+'</div>'
+        + '<div class="li-main">'
+          + '<div class="li-cat">'+cat.name+'</div>'
+          + '<div class="li-note">'+(e.note || '（無備註）')+'</div>'
+          + '<div class="li-date">'+e.date+'</div>'
+        + '</div>'
+        + '<div class="li-amount">NT$'+fmt(e.amount)+'</div>'
+        + '<div class="li-actions">'
+          + '<button data-edit="'+e.id+'">✎</button>'
+          + '<button data-del="'+e.id+'">✕</button>'
+        + '</div>'
+      + '</div>';
+    }).join('');
+
+    el.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => openEdit(btn.dataset.edit));
+    el.querySelectorAll('[data-del]').forEach(btn => btn.onclick = () => deleteExpense(btn.dataset.del));
+  }
+
+  function renderCategories(){
+    const el = $('categoryList');
+    el.innerHTML = state.categories.map(cat => (
+      '<div class="cat-row">'
+      + '<div class="color-dot-lg" style="background:'+cat.color+'" data-pick="'+cat.id+'"></div>'
+      + '<input type="text" value="'+cat.name+'" data-name="'+cat.id+'">'
+      + '<button data-delcat="'+cat.id+'" style="border:none;background:transparent;color:var(--ink-soft);font-size:15px;cursor:pointer;">✕</button>'
+      + '</div>'
+    )).join('');
+
+    el.querySelectorAll('[data-name]').forEach(inp => {
+      inp.onchange = () => {
+        const cat = categoryById(inp.dataset.name);
+        apiPost('updateCategory', { id: inp.dataset.name, name: inp.value, color: cat.color });
+      };
+    });
+    el.querySelectorAll('[data-delcat]').forEach(btn => {
+      btn.onclick = () => {
+        if(confirm('刪除這個分類？已使用這個分類的紀錄會保留，但會顯示為未分類。')){
+          apiPost('deleteCategory', { id: btn.dataset.delcat }).then(()=> toast('分類已刪除'));
+        }
+      };
+    });
+  }
+
+  let chartInstance = null;
+  function renderChart(){
+    const unpaid = unpaidExpenses();
+    const byCat = {};
+    unpaid.forEach(e => { byCat[e.categoryId] = (byCat[e.categoryId]||0) + Number(e.amount); });
+    const catIds = Object.keys(byCat).sort((a,b)=> byCat[b]-byCat[a]);
+    const labels = catIds.map(id => categoryById(id).name);
+    const colors = catIds.map(id => categoryById(id).color);
+    const values = catIds.map(id => byCat[id]);
+
+    const ctx = document.getElementById('pieChart');
+    if(chartInstance) chartInstance.destroy();
+
+    if(values.length === 0){
+      $('breakdownList').innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>目前沒有未結清的消費<br>還沒有東西可以分析</p></div>';
+      return;
+    }
+
+    chartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor:'#FFF8F1', borderWidth: 3 }] },
+      options: {
+        cutout: '62%',
+        plugins: { legend: { display: false } }
+      }
+    });
+
+    const total = values.reduce((a,b)=>a+b,0);
+    $('breakdownList').innerHTML = catIds.map((id,i) => (
+      '<div class="breakdown-row">'
+      + '<span class="dot" style="background:'+colors[i]+'"></span>'
+      + '<span class="name">'+labels[i]+'</span>'
+      + '<span class="amt">NT$'+fmt(values[i])+' · '+Math.round(values[i]/total*100)+'%</span>'
+      + '</div>'
+    )).join('');
+  }
+
+  // ---------- Actions ----------
+  function openEdit(id){
+    const e = state.expenses.find(x => x.id === id);
+    if(!e) return;
+    state.editingId = id;
+    state.editSelectedCat = e.categoryId;
+    $('editAmount').value = e.amount;
+    $('editDate').value = e.date;
+    $('editNote').value = e.note || '';
+    renderCatPicker();
+    $('editModalOverlay').classList.add('show');
+  }
+
+  function deleteExpense(id){
+    if(confirm('刪除這筆紀錄？')){
+      apiPost('deleteExpense', { id }).then(()=> toast('已刪除'));
+    }
+  }
+
+  // ---------- Init UI events ----------
+  $('dateInput').value = todayStr();
+
+  $('addExpenseBtn').onclick = () => {
+    const amount = parseFloat($('amountInput').value);
+    if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
+    if(!state.selectedCat){ toast('請選擇一個分類'); return; }
+    apiPost('addExpense', {
+      amount, date: $('dateInput').value, note: $('noteInput').value,
+      categoryId: state.selectedCat, type: 'expense'
+    }).then(res => {
+      if(res){
+        $('amountInput').value = '';
+        $('noteInput').value = '';
+        $('dateInput').value = todayStr();
+        toast('已加入紀錄');
+      }
+    });
+  };
+
+  $('settleBtn').onclick = () => {
+    const unpaid = unpaidExpenses();
+    const total = unpaid.reduce((s,e)=> s + Number(e.amount), 0);
+    if(total <= 0){ toast('目前沒有需要結清的金額'); return; }
+    if(confirm('確定要標記本期 NT$'+fmt(total)+' 已繳費結清嗎？')){
+      apiPost('addExpense', { amount: total, date: todayStr(), note: '', categoryId: '', type: 'payment' })
+        .then(()=> toast('已結清本期消費'));
+    }
+  };
+
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.onclick = () => {
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      $('panel-'+tab.dataset.tab).classList.add('active');
+    };
+  });
+
+  $('editCancelBtn').onclick = () => $('editModalOverlay').classList.remove('show');
+  $('editSaveBtn').onclick = () => {
+    const amount = parseFloat($('editAmount').value);
+    if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
+    apiPost('updateExpense', {
+      id: state.editingId, amount, date: $('editDate').value,
+      note: $('editNote').value, categoryId: state.editSelectedCat, type:'expense'
+    }).then(()=> {
+      $('editModalOverlay').classList.remove('show');
+      toast('已儲存變更');
+    });
+  };
+
+  // new category color picker
+  (function initColorSwatches(){
+    const el = $('newCatColors');
+    CATEGORY_COLORS.forEach(c => {
+      const d = document.createElement('div');
+      d.style.background = c;
+      if(c === state.newCatColor) d.classList.add('selected');
+      d.onclick = () => {
+        state.newCatColor = c;
+        [...el.children].forEach(ch => ch.classList.remove('selected'));
+        d.classList.add('selected');
+      };
+      el.appendChild(d);
+    });
+  })();
+
+  $('addCatBtn').onclick = () => {
+    const name = $('newCatName').value.trim();
+    if(!name){ toast('請輸入分類名稱'); return; }
+    apiPost('addCategory', { name, color: state.newCatColor }).then(res => {
+      if(res){ $('newCatName').value = ''; toast('已新增分類'); }
+    });
+  };
+
+  // Settings modal
+  $('settingsBtn').onclick = () => {
+    $('webhookInput').value = state.webhookUrl;
+    $('tokenInput').value = state.token;
+    setConn(!!state.webhookUrl);
+    $('settingsModalOverlay').classList.add('show');
+  };
+  $('settingsCancelBtn').onclick = () => $('settingsModalOverlay').classList.remove('show');
+  $('settingsSaveBtn').onclick = () => {
+    const url = $('webhookInput').value.trim();
+    const token = $('tokenInput').value.trim();
+    if(!url){ toast('請貼上 Web App 網址'); return; }
+    if(!token){ toast('請填入通關密語'); return; }
+    state.webhookUrl = url;
+    state.token = token;
+    localStorage.setItem('walletcard_webhook', url);
+    localStorage.setItem('walletcard_token', token);
+    apiGet().then(()=> {
+      toast('已連接並同步資料');
+      $('settingsModalOverlay').classList.remove('show');
+    });
+  };
+
+  [ $('editModalOverlay'), $('settingsModalOverlay') ].forEach(ov => {
+    ov.addEventListener('click', (e) => { if(e.target === ov) ov.classList.remove('show'); });
+  });
+
+  // ---------- Boot ----------
+  if(state.webhookUrl){
+    apiGet();
+  }else{
+    renderAll();
+    setTimeout(()=> $('settingsBtn').click(), 400);
+  }
+
+})();
+</script>
+</body>
+</html>
