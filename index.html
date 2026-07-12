@@ -156,7 +156,7 @@
     display:flex; flex-direction:column; align-items:center; gap:8px;
     border:1px solid var(--line); position:relative;
   }
-  .color-dot-lg{width:28px;height:28px;border-radius:50%; flex-shrink:0; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line);}
+  .color-dot-lg{width:28px;height:28px;border-radius:50%; flex-shrink:0; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--line); cursor:pointer;}
   .manage-card input[type=text]{
     border:none; background:transparent; font-weight:600; font-size:13px; 
     padding:0; width:100%; text-align:center; color:var(--ink);
@@ -165,6 +165,12 @@
     position:absolute; top:2px; right:2px; border:none; background:transparent;
     color:var(--ink-soft); font-size:14px; cursor:pointer; padding:4px 8px;
   }
+  .reorder-row{display:flex; gap:4px; margin-top:2px;}
+  .reorder-row button{
+    flex:1; border:none; background:var(--cream); border-radius:8px;
+    font-size:11px; padding:3px 0; cursor:pointer; color:var(--ink);
+  }
+  .reorder-row button:disabled{opacity:.35; cursor:default;}
 
   .color-swatches{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px;}
   .color-swatches div{width:24px;height:24px;border-radius:50%; cursor:pointer; border:2px solid transparent;}
@@ -255,7 +261,24 @@
     <div class="tab" data-tab="categories">分類</div>
   </div>
 
-  <div class="panel active" id="panel-list"></div>
+  <div class="panel active" id="panel-list">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <div class="tabs" style="margin-bottom:0; width:130px; padding:4px;">
+        <div class="tab active" id="listTabMonth" style="padding:4px 2px;">月份</div>
+        <div class="tab" id="listTabYear" style="padding:4px 2px;">年度</div>
+      </div>
+      <button class="ghost-btn" id="clearExpensesBtn" style="width:auto; padding:8px 14px; font-size:12px;">🗑 清空紀錄</button>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; background:#FFFCFA; border:1px solid var(--line); border-radius:14px; padding:6px;">
+      <button class="icon-btn" id="listPrevBtn" style="width:36px;height:36px;border:none;background:transparent;box-shadow:none;">&lt;</button>
+      <div style="text-align:center;">
+        <div id="listPeriodLabel" style="font-weight:700; font-size:15px;"></div>
+        <div id="listPeriodSub" style="font-size:11px; color:var(--ink-soft); margin-top:2px;"></div>
+      </div>
+      <button class="icon-btn" id="listNextBtn" style="width:36px;height:36px;border:none;background:transparent;box-shadow:none;">&gt;</button>
+    </div>
+    <div id="listContent"></div>
+  </div>
 
   <div class="panel" id="panel-chart">
     <div class="chart-card">
@@ -351,6 +374,16 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="colorPickModalOverlay">
+  <div class="modal">
+    <h3>選一個顏色</h3>
+    <div class="color-swatches" id="colorPickSwatches" style="margin-bottom:4px;"></div>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="colorPickCancelBtn">取消</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="settingsModalOverlay">
   <div class="modal">
     <h3>連接你的 Google 試算表</h3>
@@ -398,6 +431,11 @@
 
   let chartState = {
     mode: 'month', // 'month' or 'year'
+    date: new Date()
+  };
+
+  let listState = {
+    mode: 'month',
     date: new Date()
   };
 
@@ -501,10 +539,17 @@
   }
 
   function renderList(){
-    const el = $('panel-list');
-    const items = [...state.expenses].sort((a,b)=> (b.createdAt||b.date).localeCompare(a.createdAt||a.date));
+    const { dStart, dEnd, labelStr, subStr } = getPeriodRange(listState.mode, listState.date, state.startDay);
+    $('listPeriodLabel').textContent = labelStr;
+    $('listPeriodSub').textContent = subStr;
+    const startStr = formatD(dStart), endStr = formatD(dEnd);
+
+    const el = $('listContent');
+    const items = state.expenses
+      .filter(e => e.date >= startStr && e.date <= endStr)
+      .sort((a,b)=> (b.createdAt||b.date).localeCompare(a.createdAt||a.date));
     if(items.length === 0){
-      el.innerHTML = '<div class="empty-state"><div class="emoji">🧾</div><p>還沒有任何消費紀錄<br>用上面的表單記下第一筆吧</p></div>';
+      el.innerHTML = '<div class="empty-state"><div class="emoji">🧾</div><p>這個區間內沒有消費紀錄</p></div>';
       return;
     }
     el.innerHTML = items.map(e => {
@@ -539,15 +584,19 @@
 
   function renderCategories(){
     const el = $('categoryList');
-    // 套用 3 欄並排樣式
-    el.innerHTML = state.categories.map(cat => (
+    const cats = state.categories;
+    el.innerHTML = cats.map((cat, idx) => (
       '<div class="manage-card">'
       + '<button class="del-btn" data-delcat="'+cat.id+'">✕</button>'
-      + '<div class="color-dot-lg" style="background:'+cat.color+'"></div>'
+      + '<div class="color-dot-lg" style="background:'+cat.color+'" data-pickcolor="'+cat.id+'"></div>'
       + '<input type="text" value="'+cat.name+'" data-name="'+cat.id+'">'
+      + '<div class="reorder-row">'
+        + '<button data-moveleft="'+cat.id+'" '+(idx===0?'disabled':'')+'>◀</button>'
+        + '<button data-moveright="'+cat.id+'" '+(idx===cats.length-1?'disabled':'')+'>▶</button>'
+      + '</div>'
       + '</div>'
     )).join('');
-    
+
     el.querySelectorAll('[data-name]').forEach(inp => inp.onchange = () => {
       const cat = categoryById(inp.dataset.name);
       apiPost('updateCategory', { id: inp.dataset.name, name: inp.value, color: cat.color });
@@ -557,11 +606,63 @@
         apiPost('deleteCategory', { id: btn.dataset.delcat }).then(()=> toast('分類已刪除'));
       }
     });
+    el.querySelectorAll('[data-pickcolor]').forEach(dot => dot.onclick = () => openColorPick(dot.dataset.pickcolor));
+    el.querySelectorAll('[data-moveleft]').forEach(btn => btn.onclick = () => moveCategory(btn.dataset.moveleft, -1));
+    el.querySelectorAll('[data-moveright]').forEach(btn => btn.onclick = () => moveCategory(btn.dataset.moveright, 1));
   }
 
-  /* --- 圖表與區間邏輯 --- */
+  function moveCategory(id, dir){
+    const ids = state.categories.map(c => c.id);
+    const i = ids.indexOf(id);
+    const j = i + dir;
+    if(j < 0 || j >= ids.length) return;
+    [ids[i], ids[j]] = [ids[j], ids[i]];
+    apiPost('reorderCategories', { order: ids });
+  }
+
+  let colorPickTargetId = null;
+  function openColorPick(catId){
+    colorPickTargetId = catId;
+    const el = $('colorPickSwatches');
+    el.innerHTML = '';
+    CATEGORY_COLORS.forEach(c => {
+      const d = document.createElement('div');
+      d.style.background = c;
+      d.onclick = () => {
+        const cat = categoryById(colorPickTargetId);
+        apiPost('updateCategory', { id: colorPickTargetId, name: cat.name, color: c }).then(()=> {
+          $('colorPickModalOverlay').classList.remove('show');
+          toast('顏色已更新');
+        });
+      };
+      el.appendChild(d);
+    });
+    $('colorPickModalOverlay').classList.add('show');
+  }
+
+  /* --- 圖表與紀錄共用的區間邏輯 --- */
   function formatD(d) {
     return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  function getPeriodRange(mode, date, startDay){
+    const y = date.getFullYear();
+    const m = date.getMonth();
+    let dStart, dEnd, labelStr, subStr;
+    if (mode === 'year') {
+      dStart = new Date(y, 0, 1);
+      dEnd = new Date(y, 11, 31);
+      labelStr = `${y} 年度`;
+      subStr = `${y}-01-01 ~ ${y}-12-31`;
+    } else {
+      const sd = Math.min(startDay, 28);
+      dStart = new Date(y, m, sd);
+      dEnd = new Date(y, m + 1, sd);
+      dEnd.setDate(dEnd.getDate() - 1);
+      labelStr = `${y}年 ${m + 1}月`;
+      subStr = `${formatD(dStart)} ~ ${formatD(dEnd)}`;
+    }
+    return { dStart, dEnd, labelStr, subStr };
   }
 
   $('chartTabMonth').onclick = () => { chartState.mode = 'month'; $('chartTabMonth').classList.add('active'); $('chartTabYear').classList.remove('active'); renderChart(); };
@@ -578,27 +679,23 @@
     renderChart();
   };
 
+  $('listTabMonth').onclick = () => { listState.mode = 'month'; $('listTabMonth').classList.add('active'); $('listTabYear').classList.remove('active'); renderList(); };
+  $('listTabYear').onclick = () => { listState.mode = 'year'; $('listTabYear').classList.add('active'); $('listTabMonth').classList.remove('active'); renderList(); };
+
+  $('listPrevBtn').onclick = () => {
+    if (listState.mode === 'month') listState.date.setMonth(listState.date.getMonth() - 1);
+    else listState.date.setFullYear(listState.date.getFullYear() - 1);
+    renderList();
+  };
+  $('listNextBtn').onclick = () => {
+    if (listState.mode === 'month') listState.date.setMonth(listState.date.getMonth() + 1);
+    else listState.date.setFullYear(listState.date.getFullYear() + 1);
+    renderList();
+  };
+
   let chartInstance = null;
   function renderChart(){
-    const y = chartState.date.getFullYear();
-    const m = chartState.date.getMonth();
-    
-    let dStart, dEnd, labelStr, subStr;
-
-    if (chartState.mode === 'year') {
-      dStart = new Date(y, 0, 1);
-      dEnd = new Date(y, 11, 31);
-      labelStr = `${y} 年度`;
-      subStr = `${y}-01-01 ~ ${y}-12-31`;
-    } else {
-      let sd = Math.min(state.startDay, 28); 
-      dStart = new Date(y, m, sd);
-      dEnd = new Date(y, m + 1, sd);
-      dEnd.setDate(dEnd.getDate() - 1);
-      labelStr = `${y}年 ${m + 1}月`;
-      subStr = `${formatD(dStart)} ~ ${formatD(dEnd)}`;
-    }
-
+    const { dStart, dEnd, labelStr, subStr } = getPeriodRange(chartState.mode, chartState.date, state.startDay);
     $('chartPeriodLabel').textContent = labelStr;
     $('chartPeriodSub').textContent = subStr;
 
@@ -660,6 +757,15 @@
     $('payNote').value = '';
     $('payModalOverlay').classList.add('show');
   };
+
+  $('clearExpensesBtn').onclick = () => {
+    if(state.expenses.length === 0){ toast('目前沒有任何紀錄'); return; }
+    if(confirm('確定要清空「所有」消費與繳費紀錄嗎？這個動作無法復原。')){
+      apiPost('clearExpenses', {}).then(()=> toast('已清空所有紀錄'));
+    }
+  };
+
+  $('colorPickCancelBtn').onclick = () => $('colorPickModalOverlay').classList.remove('show');
 
   $('dateInput').value = todayStr();
 
@@ -753,10 +859,11 @@
     localStorage.setItem('walletcard_startDay', sDay);
     
     renderChart();
+    renderList();
     apiGet().then(()=> { toast('已儲存設定'); $('settingsModalOverlay').classList.remove('show'); });
   };
 
-  [ $('editModalOverlay'), $('payModalOverlay'), $('settingsModalOverlay') ].forEach(ov => {
+  [ $('editModalOverlay'), $('payModalOverlay'), $('settingsModalOverlay'), $('colorPickModalOverlay') ].forEach(ov => {
     ov.addEventListener('click', (e) => { if(e.target === ov) ov.classList.remove('show'); });
   });
 
