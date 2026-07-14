@@ -718,12 +718,29 @@
       $('breakdownList').innerHTML = '<div class="empty-state"><div class="emoji">📊</div><p>這個區間內沒有消費紀錄</p></div>';
       return;
     }
+    const total = values.reduce((a,b)=>a+b,0);
     chartInstance = new Chart(ctx, {
       type: 'doughnut',
       data: { labels, datasets: [{ data: values, backgroundColor: colors, borderColor:'#FFF7ED', borderWidth: 3 }] },
-      options: { cutout: '62%', plugins: { legend: { display: false } } }
+      options: { cutout: '62%', plugins: { legend: { display: false } } },
+      plugins: [{
+        id: 'centerText',
+        afterDraw(chart){
+          const { ctx, chartArea:{left,right,top,bottom} } = chart;
+          const cx = (left+right)/2, cy = (top+bottom)/2;
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.font = "700 22px 'JetBrains Mono', monospace";
+          ctx.fillStyle = '#4A2E3D';
+          ctx.fillText('NT$'+fmt(total), cx, cy - 9);
+          ctx.font = "600 11px 'Inter', sans-serif";
+          ctx.fillStyle = '#8A6E7D';
+          ctx.fillText('區間消費加總', cx, cy + 14);
+          ctx.restore();
+        }
+      }]
     });
-    const total = values.reduce((a,b)=>a+b,0);
     $('breakdownList').innerHTML = catIds.map((id,i) => (
       '<div class="breakdown-row">'
       + '<span class="dot" style="background:'+colors[i]+'"></span>'
