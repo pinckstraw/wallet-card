@@ -300,8 +300,15 @@
         <button class="icon-btn" id="chartNextBtn" style="width:36px;height:36px;border:none;background:transparent;box-shadow:none;">&gt;</button>
       </div>
 
+      <div id="periodCompare" style="text-align:center; font-size:12px; font-weight:700; margin-bottom:14px;"></div>
+
       <canvas id="pieChart" height="220"></canvas>
       <div id="breakdownList" style="margin-top:16px;"></div>
+
+      <div id="trendChartWrap" style="display:none; margin-top:22px; padding-top:18px; border-top:1px solid var(--line);">
+        <h2 style="margin:0 0 12px; font-family:'Baloo 2',sans-serif; font-size:16px;">每月消費趨勢</h2>
+        <canvas id="trendChart" height="180"></canvas>
+      </div>
     </div>
   </div>
 
@@ -694,6 +701,46 @@
   };
 
   let chartInstance = null;
+  let trendChartInstance = null;
+
+  function renderPeriodCompare(curTotal, prevTotal){
+    const el = $('periodCompare');
+    if(prevTotal === 0){
+      el.innerHTML = curTotal === 0 ? '' : '<span style="color:var(--danger)">▲ 上期無消費，本期共 NT$'+fmt(curTotal)+'</span>';
+      return;
+    }
+    const diff = curTotal - prevTotal;
+    if(diff === 0){ el.innerHTML = '<span style="color:var(--ink-soft)">與上期持平</span>'; return; }
+    const pct = Math.round(Math.abs(diff)/prevTotal*100);
+    const up = diff > 0;
+    const color = up ? 'var(--danger)' : '#4C9A6A';
+    const arrow = up ? '▲' : '▼';
+    el.innerHTML = '<span style="color:'+color+'">'+arrow+' 較上期'+(up?'增加':'減少')+' '+pct+'%（NT$'+fmt(Math.abs(diff))+'）</span>';
+  }
+
+  function renderTrendChart(year){
+    const monthNames = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+    const monthTotals = new Array(12).fill(0);
+    state.expenses.forEach(e => {
+      if(e.type !== 'expense') return;
+      const parts = e.date.split('-');
+      if(Number(parts[0]) === year) monthTotals[Number(parts[1]) - 1] += Number(e.amount);
+    });
+    const ctx = document.getElementById('trendChart');
+    if(trendChartInstance) trendChartInstance.destroy();
+    trendChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: { labels: monthNames, datasets: [{ data: monthTotals, backgroundColor: '#99C2FF', borderRadius: 6, maxBarThickness: 22 }] },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display:false }, ticks: { color:'#8A6E7D', font:{ size:10 } } },
+          y: { grid: { color:'#F1E0D6' }, ticks: { color:'#8A6E7D', font:{ size:10 } } }
+        }
+      }
+    });
+  }
+
   function renderChart(){
     const { dStart, dEnd, labelStr, subStr } = getPeriodRange(chartState.mode, chartState.date, state.startDay);
     $('chartPeriodLabel').textContent = labelStr;
@@ -703,6 +750,27 @@
     const endStr = formatD(dEnd);
 
     const rows = state.expenses.filter(e => e.type === 'expense' && e.date >= startStr && e.date <= endStr);
+
+    if(chartState.mode === 'month'){
+      const prevDate = new Date(chartState.date);
+      prevDate.setMonth(prevDate.getMonth() - 1);
+      const prevRange = getPeriodRange('month', prevDate, state.startDay);
+      const prevStart = formatD(prevRange.dStart), prevEnd = formatD(prevRange.dEnd);
+      const prevTotal = state.expenses
+        .filter(e => e.type === 'expense' && e.date >= prevStart && e.date <= prevEnd)
+        .reduce((s,e)=> s + Number(e.amount), 0);
+      const curTotal = rows.reduce((s,e)=> s + Number(e.amount), 0);
+      renderPeriodCompare(curTotal, prevTotal);
+    } else {
+      $('periodCompare').innerHTML = '';
+    }
+
+    if(chartState.mode === 'year'){
+      $('trendChartWrap').style.display = '';
+      renderTrendChart(chartState.date.getFullYear());
+    } else {
+      $('trendChartWrap').style.display = 'none';
+    }
     
     const byCat = {};
     rows.forEach(e => { byCat[e.categoryId] = (byCat[e.categoryId]||0) + Number(e.amount); });
