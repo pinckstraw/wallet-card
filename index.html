@@ -127,16 +127,9 @@
   .panel{display:none;}
   .panel.active{display:block;}
 
-  .swipe-wrap{position:relative; border-radius:var(--radius-md); margin-bottom:10px; overflow:hidden;}
-  .swipe-delete-bg{
-    position:absolute; inset:0; background:var(--danger); color:#fff;
-    display:flex; align-items:center; justify-content:flex-end; padding-right:22px;
-    font-size:13px; font-weight:700; border-radius:var(--radius-md);
-  }
   .list-item{
     background:var(--card); border-radius:var(--radius-md); padding:14px 14px;
-    display:flex; align-items:center; gap:12px; border:1px solid var(--line);
-    position:relative; touch-action:pan-y; will-change:transform;
+    display:flex; align-items:center; gap:12px; margin-bottom:10px; border:1px solid var(--line);
   }
   .cat-dot{width:38px;height:38px;border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--ink);}
   .li-main{flex:1; min-width:0;}
@@ -172,12 +165,14 @@
     position:absolute; top:2px; right:2px; border:none; background:transparent;
     color:var(--ink-soft); font-size:14px; cursor:pointer; padding:4px 8px;
   }
-  .reorder-row{display:flex; gap:4px; margin-top:2px;}
-  .reorder-row button{
-    flex:1; border:none; background:var(--cream); border-radius:8px;
-    font-size:11px; padding:3px 0; cursor:pointer; color:var(--ink);
+  .manage-card.dragging{ opacity:.35; }
+  .drag-handle{
+    position:absolute; top:2px; left:2px; font-size:15px; color:var(--ink-soft);
+    padding:4px 8px; cursor:grab; touch-action:none; user-select:none;
   }
-  .reorder-row button:disabled{opacity:.35; cursor:default;}
+  .drag-ghost{
+    box-shadow:0 10px 24px rgba(74,46,61,.35); transform:scale(1.04);
+  }
   .save-indicator{
     font-size:10px; font-weight:700; color:#4C9A6A; opacity:0; height:12px;
     transition:opacity .3s; margin-top:2px;
@@ -622,21 +617,17 @@
     }
     el.innerHTML = items.map(e => {
       if(e.type === 'payment'){
-        return '<div class="swipe-wrap" data-swipe-id="'+e.id+'">'
-          + '<div class="swipe-delete-bg">🗑 刪除</div>'
-          + '<div class="list-item">'
+        return '<div class="list-item">'
           + '<div class="cat-dot" style="background:#DDEFE0;">✓</div>'
           + '<div class="li-main"><div class="li-cat">繳納紀錄</div>'
           + (e.note ? '<div class="li-note">'+e.note+'</div>' : '')
           + '<div class="li-date">'+e.date+'</div></div>'
           + '<div class="li-amount payment">-NT$'+fmt(e.amount)+'</div>'
           + '<div class="li-actions"><button data-del="'+e.id+'">✕</button></div>'
-          + '</div></div>';
+          + '</div>';
       }
       const cat = categoryById(e.categoryId);
-      return '<div class="swipe-wrap" data-swipe-id="'+e.id+'">'
-        + '<div class="swipe-delete-bg">🗑 刪除</div>'
-        + '<div class="list-item">'
+      return '<div class="list-item">'
         + '<div class="cat-dot" style="background:'+cat.color+'55;">'+cat.name.slice(0,1)+'</div>'
         + '<div class="li-main">'
           + '<div class="li-cat">'+cat.name+'</div>'
@@ -648,56 +639,22 @@
           + '<button data-edit="'+e.id+'">✎</button>'
           + '<button data-del="'+e.id+'">✕</button>'
         + '</div>'
-      + '</div></div>';
+      + '</div>';
     }).join('');
     el.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => openEdit(btn.dataset.edit));
     el.querySelectorAll('[data-del]').forEach(btn => btn.onclick = () => deleteExpense(btn.dataset.del));
-    el.querySelectorAll('.swipe-wrap').forEach(wrap => attachSwipe(wrap));
-  }
-
-  function attachSwipe(wrap){
-    const item = wrap.querySelector('.list-item');
-    const bg = wrap.querySelector('.swipe-delete-bg');
-    const id = wrap.dataset.swipeId;
-    let startX = 0, dx = 0, dragging = false;
-
-    item.addEventListener('touchstart', (e) => {
-      startX = e.touches[0].clientX;
-      dragging = true;
-      item.style.transition = 'none';
-    }, { passive: true });
-
-    item.addEventListener('touchmove', (e) => {
-      if(!dragging) return;
-      dx = e.touches[0].clientX - startX;
-      if(dx > 0) dx = 0;
-      if(dx < -88) dx = -88;
-      item.style.transform = 'translateX(' + dx + 'px)';
-    }, { passive: true });
-
-    item.addEventListener('touchend', () => {
-      dragging = false;
-      item.style.transition = 'transform .2s ease';
-      item.style.transform = dx < -55 ? 'translateX(-88px)' : 'translateX(0)';
-      dx = 0;
-    });
-
-    bg.onclick = () => deleteExpense(id);
   }
 
   function renderCategories(){
     const el = $('categoryList');
     const cats = state.categories;
-    el.innerHTML = cats.map((cat, idx) => (
-      '<div class="manage-card">'
+    el.innerHTML = cats.map((cat) => (
+      '<div class="manage-card'+(cat.id === draggingCatId ? ' dragging' : '')+'" data-catid="'+cat.id+'">'
       + '<button class="del-btn" data-delcat="'+cat.id+'">✕</button>'
+      + '<div class="drag-handle" data-draghandle="'+cat.id+'">⠿</div>'
       + '<div class="color-dot-lg" style="background:'+cat.color+'" data-pickcolor="'+cat.id+'"></div>'
       + '<input type="text" value="'+cat.name+'" data-name="'+cat.id+'">'
       + '<div class="save-indicator" data-indicator="'+cat.id+'">✓ 已儲存</div>'
-      + '<div class="reorder-row">'
-        + '<button data-moveleft="'+cat.id+'" '+(idx===0?'disabled':'')+'>◀</button>'
-        + '<button data-moveright="'+cat.id+'" '+(idx===cats.length-1?'disabled':'')+'>▶</button>'
-      + '</div>'
       + '</div>'
     )).join('');
 
@@ -718,17 +675,66 @@
       }
     });
     el.querySelectorAll('[data-pickcolor]').forEach(dot => dot.onclick = () => openColorPick(dot.dataset.pickcolor));
-    el.querySelectorAll('[data-moveleft]').forEach(btn => btn.onclick = () => moveCategory(btn.dataset.moveleft, -1));
-    el.querySelectorAll('[data-moveright]').forEach(btn => btn.onclick = () => moveCategory(btn.dataset.moveright, 1));
+    el.querySelectorAll('[data-draghandle]').forEach(handle => {
+      handle.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        startCategoryDrag(handle.dataset.draghandle, handle.closest('.manage-card'), e.clientX, e.clientY);
+      });
+    });
   }
 
-  function moveCategory(id, dir){
-    const ids = state.categories.map(c => c.id);
-    const i = ids.indexOf(id);
-    const j = i + dir;
-    if(j < 0 || j >= ids.length) return;
-    [ids[i], ids[j]] = [ids[j], ids[i]];
-    apiPost('reorderCategories', { order: ids });
+  let draggingCatId = null;
+
+  function startCategoryDrag(catId, cardEl, clientX, clientY){
+    draggingCatId = catId;
+    const rect = cardEl.getBoundingClientRect();
+    const ghost = cardEl.cloneNode(true);
+    ghost.classList.add('drag-ghost');
+    ghost.style.position = 'fixed';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.zIndex = 200;
+    ghost.style.pointerEvents = 'none';
+    document.body.appendChild(ghost);
+    renderCategories();
+
+    const offsetX = clientX - rect.left;
+    const offsetY = clientY - rect.top;
+
+    function onMove(e){
+      const cx = e.clientX, cy = e.clientY;
+      ghost.style.left = (cx - offsetX) + 'px';
+      ghost.style.top = (cy - offsetY) + 'px';
+      ghost.style.visibility = 'hidden';
+      const el = document.elementFromPoint(cx, cy);
+      ghost.style.visibility = '';
+      const overCard = el && el.closest('.manage-card');
+      if(overCard && overCard.dataset.catid !== draggingCatId){
+        const ids = state.categories.map(c => c.id);
+        const fromIdx = ids.indexOf(draggingCatId);
+        const toIdx = ids.indexOf(overCard.dataset.catid);
+        if(fromIdx !== -1 && toIdx !== -1){
+          const reordered = [...state.categories];
+          const [moved] = reordered.splice(fromIdx, 1);
+          reordered.splice(toIdx, 0, moved);
+          state.categories = reordered;
+          renderCategories();
+        }
+      }
+    }
+
+    function onUp(){
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      ghost.remove();
+      draggingCatId = null;
+      renderCategories();
+      apiPost('reorderCategories', { order: state.categories.map(c => c.id) });
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
   }
 
   let colorPickTargetId = null;
