@@ -127,9 +127,16 @@
   .panel{display:none;}
   .panel.active{display:block;}
 
+  .swipe-wrap{position:relative; border-radius:var(--radius-md); margin-bottom:10px; overflow:hidden;}
+  .swipe-delete-bg{
+    position:absolute; inset:0; background:var(--danger); color:#fff;
+    display:flex; align-items:center; justify-content:flex-end; padding-right:22px;
+    font-size:13px; font-weight:700; border-radius:var(--radius-md);
+  }
   .list-item{
     background:var(--card); border-radius:var(--radius-md); padding:14px 14px;
-    display:flex; align-items:center; gap:12px; margin-bottom:10px; border:1px solid var(--line);
+    display:flex; align-items:center; gap:12px; border:1px solid var(--line);
+    position:relative; touch-action:pan-y; will-change:transform;
   }
   .cat-dot{width:38px;height:38px;border-radius:12px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700; color:var(--ink);}
   .li-main{flex:1; min-width:0;}
@@ -171,6 +178,11 @@
     font-size:11px; padding:3px 0; cursor:pointer; color:var(--ink);
   }
   .reorder-row button:disabled{opacity:.35; cursor:default;}
+  .save-indicator{
+    font-size:10px; font-weight:700; color:#4C9A6A; opacity:0; height:12px;
+    transition:opacity .3s; margin-top:2px;
+  }
+  .save-indicator.show{opacity:1;}
 
   .color-swatches{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 12px;}
   .color-swatches div{width:24px;height:24px;border-radius:50%; cursor:pointer; border:2px solid transparent;}
@@ -330,6 +342,40 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="modal-overlay" id="quickAddModalOverlay">
+  <div class="modal">
+    <h3>記一筆消費</h3>
+    <div class="field-row">
+      <div class="field">
+        <label>金額</label>
+        <input type="number" id="fabAmountInput" placeholder="0" inputmode="decimal">
+      </div>
+      <div class="field">
+        <label>日期</label>
+        <input type="date" id="fabDateInput">
+      </div>
+    </div>
+    <div class="field" style="margin-bottom:10px;">
+      <label>備註</label>
+      <input type="text" id="fabNoteInput" placeholder="例如：午餐、捷運、網購…">
+    </div>
+    <label style="margin-bottom:8px; display:block;">分類</label>
+    <div class="chip-row" id="fabCatPicker"></div>
+    <div class="modal-actions">
+      <button class="ghost-btn" id="fabCancelBtn">取消</button>
+      <button class="primary-btn" id="fabAddExpenseBtn">＋ 加入紀錄</button>
+    </div>
+  </div>
+</div>
+
+<button id="quickAddFab" aria-label="快速記一筆" style="
+  position:fixed; bottom:28px; right:24px;
+  width:56px; height:56px; border-radius:50%; border:none;
+  background:var(--ink); color:var(--cream); font-size:26px; font-weight:700;
+  box-shadow:0 6px 18px rgba(74,46,61,.35); cursor:pointer; z-index:40;
+  display:flex; align-items:center; justify-content:center;
+">＋</button>
+
 <div class="modal-overlay" id="editModalOverlay">
   <div class="modal">
     <h3>編輯這筆消費</h3>
@@ -458,6 +504,21 @@
   function fmt(n){ return Math.round(n).toLocaleString('zh-TW'); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
 
+  function withLoading(btn, fn){
+    if(btn.disabled) return Promise.resolve(null);
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.dataset.loading = '1';
+    btn.style.opacity = '.55';
+    btn.textContent = '處理中…';
+    return Promise.resolve(fn()).finally(() => {
+      btn.disabled = false;
+      delete btn.dataset.loading;
+      btn.style.opacity = '';
+      btn.textContent = original;
+    });
+  }
+
   async function apiGet(){
     if(!state.webhookUrl) return;
     try{
@@ -530,7 +591,7 @@
   }
 
   function renderPickers(){
-    ['catPicker','editCatPicker'].forEach(pid => {
+    ['catPicker','fabCatPicker','editCatPicker'].forEach(pid => {
       const el = $(pid); el.innerHTML = '';
       state.categories.forEach(cat => {
         const isEdit = pid === 'editCatPicker';
@@ -561,17 +622,21 @@
     }
     el.innerHTML = items.map(e => {
       if(e.type === 'payment'){
-        return '<div class="list-item">'
+        return '<div class="swipe-wrap" data-swipe-id="'+e.id+'">'
+          + '<div class="swipe-delete-bg">🗑 刪除</div>'
+          + '<div class="list-item">'
           + '<div class="cat-dot" style="background:#DDEFE0;">✓</div>'
           + '<div class="li-main"><div class="li-cat">繳納紀錄</div>'
           + (e.note ? '<div class="li-note">'+e.note+'</div>' : '')
           + '<div class="li-date">'+e.date+'</div></div>'
           + '<div class="li-amount payment">-NT$'+fmt(e.amount)+'</div>'
           + '<div class="li-actions"><button data-del="'+e.id+'">✕</button></div>'
-          + '</div>';
+          + '</div></div>';
       }
       const cat = categoryById(e.categoryId);
-      return '<div class="list-item">'
+      return '<div class="swipe-wrap" data-swipe-id="'+e.id+'">'
+        + '<div class="swipe-delete-bg">🗑 刪除</div>'
+        + '<div class="list-item">'
         + '<div class="cat-dot" style="background:'+cat.color+'55;">'+cat.name.slice(0,1)+'</div>'
         + '<div class="li-main">'
           + '<div class="li-cat">'+cat.name+'</div>'
@@ -583,10 +648,41 @@
           + '<button data-edit="'+e.id+'">✎</button>'
           + '<button data-del="'+e.id+'">✕</button>'
         + '</div>'
-      + '</div>';
+      + '</div></div>';
     }).join('');
     el.querySelectorAll('[data-edit]').forEach(btn => btn.onclick = () => openEdit(btn.dataset.edit));
     el.querySelectorAll('[data-del]').forEach(btn => btn.onclick = () => deleteExpense(btn.dataset.del));
+    el.querySelectorAll('.swipe-wrap').forEach(wrap => attachSwipe(wrap));
+  }
+
+  function attachSwipe(wrap){
+    const item = wrap.querySelector('.list-item');
+    const bg = wrap.querySelector('.swipe-delete-bg');
+    const id = wrap.dataset.swipeId;
+    let startX = 0, dx = 0, dragging = false;
+
+    item.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      dragging = true;
+      item.style.transition = 'none';
+    }, { passive: true });
+
+    item.addEventListener('touchmove', (e) => {
+      if(!dragging) return;
+      dx = e.touches[0].clientX - startX;
+      if(dx > 0) dx = 0;
+      if(dx < -88) dx = -88;
+      item.style.transform = 'translateX(' + dx + 'px)';
+    }, { passive: true });
+
+    item.addEventListener('touchend', () => {
+      dragging = false;
+      item.style.transition = 'transform .2s ease';
+      item.style.transform = dx < -55 ? 'translateX(-88px)' : 'translateX(0)';
+      dx = 0;
+    });
+
+    bg.onclick = () => deleteExpense(id);
   }
 
   function renderCategories(){
@@ -597,6 +693,7 @@
       + '<button class="del-btn" data-delcat="'+cat.id+'">✕</button>'
       + '<div class="color-dot-lg" style="background:'+cat.color+'" data-pickcolor="'+cat.id+'"></div>'
       + '<input type="text" value="'+cat.name+'" data-name="'+cat.id+'">'
+      + '<div class="save-indicator" data-indicator="'+cat.id+'">✓ 已儲存</div>'
       + '<div class="reorder-row">'
         + '<button data-moveleft="'+cat.id+'" '+(idx===0?'disabled':'')+'>◀</button>'
         + '<button data-moveright="'+cat.id+'" '+(idx===cats.length-1?'disabled':'')+'>▶</button>'
@@ -606,7 +703,14 @@
 
     el.querySelectorAll('[data-name]').forEach(inp => inp.onchange = () => {
       const cat = categoryById(inp.dataset.name);
-      apiPost('updateCategory', { id: inp.dataset.name, name: inp.value, color: cat.color });
+      const indicator = el.querySelector('[data-indicator="'+inp.dataset.name+'"]');
+      apiPost('updateCategory', { id: inp.dataset.name, name: inp.value, color: cat.color }).then(res => {
+        if(res && indicator){
+          indicator.classList.add('show');
+          clearTimeout(indicator._timer);
+          indicator._timer = setTimeout(()=> indicator.classList.remove('show'), 1400);
+        }
+      });
     });
     el.querySelectorAll('[data-delcat]').forEach(btn => btn.onclick = () => {
       if(confirm('刪除這個分類？已使用這個分類的紀錄會保留，但會顯示為未分類。')){
@@ -853,17 +957,38 @@
   $('colorPickCancelBtn').onclick = () => $('colorPickModalOverlay').classList.remove('show');
 
   $('dateInput').value = todayStr();
+  $('fabDateInput').value = todayStr();
 
   $('addExpenseBtn').onclick = () => {
     const amount = parseFloat($('amountInput').value);
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
     if(!state.selectedCat){ toast('請選擇一個分類'); return; }
-    apiPost('addExpense', {
+    withLoading($('addExpenseBtn'), () => apiPost('addExpense', {
       amount, date: $('dateInput').value, note: $('noteInput').value,
       categoryId: state.selectedCat, type: 'expense'
     }).then(res => {
       if(res){ $('amountInput').value=''; $('noteInput').value=''; $('dateInput').value = todayStr(); toast('已加入紀錄'); }
-    });
+    }));
+  };
+
+  $('quickAddFab').onclick = () => {
+    $('fabAmountInput').value = '';
+    $('fabNoteInput').value = '';
+    $('fabDateInput').value = todayStr();
+    renderPickers();
+    $('quickAddModalOverlay').classList.add('show');
+  };
+  $('fabCancelBtn').onclick = () => $('quickAddModalOverlay').classList.remove('show');
+  $('fabAddExpenseBtn').onclick = () => {
+    const amount = parseFloat($('fabAmountInput').value);
+    if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
+    if(!state.selectedCat){ toast('請選擇一個分類'); return; }
+    withLoading($('fabAddExpenseBtn'), () => apiPost('addExpense', {
+      amount, date: $('fabDateInput').value, note: $('fabNoteInput').value,
+      categoryId: state.selectedCat, type: 'expense'
+    }).then(res => {
+      if(res){ $('quickAddModalOverlay').classList.remove('show'); toast('已加入紀錄'); }
+    }));
   };
 
   document.querySelectorAll('.tab[data-tab]').forEach(tab => {
@@ -879,22 +1004,22 @@
   $('editSaveBtn').onclick = () => {
     const amount = parseFloat($('editAmount').value);
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
-    apiPost('updateExpense', {
+    withLoading($('editSaveBtn'), () => apiPost('updateExpense', {
       id: state.editingId, amount, date: $('editDate').value,
       note: $('editNote').value, categoryId: state.editSelectedCat, type:'expense'
-    }).then(()=> { $('editModalOverlay').classList.remove('show'); toast('已儲存變更'); });
+    }).then(()=> { $('editModalOverlay').classList.remove('show'); toast('已儲存變更'); }));
   };
 
   $('payCancelBtn').onclick = () => $('payModalOverlay').classList.remove('show');
   $('paySaveBtn').onclick = () => {
     const amount = parseFloat($('payAmount').value);
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
-    apiPost('addExpense', {
+    withLoading($('paySaveBtn'), () => apiPost('addExpense', {
       amount, date: $('payDate').value, note: $('payNote').value,
       categoryId: '', type: 'payment'
     }).then(res => {
       if(res){ $('payModalOverlay').classList.remove('show'); toast('已登記繳納金額'); }
-    });
+    }));
   };
 
   function initColorSwatches(containerId, colorArr, getSelected, setSelected){
@@ -948,7 +1073,7 @@
     apiGet().then(()=> { toast('已儲存設定'); $('settingsModalOverlay').classList.remove('show'); });
   };
 
-  [ $('editModalOverlay'), $('payModalOverlay'), $('settingsModalOverlay'), $('colorPickModalOverlay') ].forEach(ov => {
+  [ $('editModalOverlay'), $('payModalOverlay'), $('settingsModalOverlay'), $('colorPickModalOverlay'), $('quickAddModalOverlay') ].forEach(ov => {
     ov.addEventListener('click', (e) => { if(e.target === ov) ov.classList.remove('show'); });
   });
 
