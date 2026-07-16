@@ -232,43 +232,46 @@
     <div class="icon-btn" id="settingsBtn">⚙</div>
   </div>
 
-  <div class="card-hero" style="background:var(--pink);">
-    <div class="ch-top">
-      <div><div class="ch-name">總計待收款</div></div>
-    </div>
-    <div class="ch-amount"><small>NT$</small><span id="heroTotal">0</span></div>
-    <div class="ch-sub" id="heroLastPay">尚未有繳費紀錄</div>
-    <button class="pay-btn" id="globalPayBtn">登記繳費 / 扣款</button>
-  </div>
-
-  <div class="add-card">
-    <h2>記一筆消費</h2>
-    <div class="field-row">
-      <div class="field">
-        <label>金額</label>
-        <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
-      </div>
-      <div class="field">
-        <label>日期</label>
-        <input type="date" id="dateInput">
-      </div>
-    </div>
-    <div class="field" style="margin-bottom:12px;">
-      <label>備註</label>
-      <input type="text" id="noteInput" placeholder="例如：午餐、捷運、網購…">
-    </div>
-    <label style="margin-bottom:8px; display:block;">分類</label>
-    <div class="chip-row" id="catPicker"></div>
-    <button class="primary-btn" id="addExpenseBtn">＋ 加入紀錄</button>
-  </div>
-
   <div class="tabs">
-    <div class="tab active" data-tab="list">紀錄</div>
+    <div class="tab active" data-tab="overview">總覽</div>
+    <div class="tab" data-tab="list">紀錄</div>
     <div class="tab" data-tab="chart">分析</div>
     <div class="tab" data-tab="categories">分類</div>
   </div>
 
-  <div class="panel active" id="panel-list">
+  <div class="panel active" id="panel-overview">
+    <div class="card-hero" style="background:var(--pink);">
+      <div class="ch-top">
+        <div><div class="ch-name">總計待收款</div></div>
+      </div>
+      <div class="ch-amount"><small>NT$</small><span id="heroTotal">0</span></div>
+      <div class="ch-sub" id="heroLastPay">尚未有繳費紀錄</div>
+      <button class="pay-btn" id="globalPayBtn">登記繳費 / 扣款</button>
+    </div>
+
+    <div class="add-card">
+      <h2>記一筆消費</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>金額</label>
+          <input type="number" id="amountInput" placeholder="0" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label>日期</label>
+          <input type="date" id="dateInput">
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:12px;">
+        <label>備註</label>
+        <input type="text" id="noteInput" placeholder="例如：午餐、捷運、網購…">
+      </div>
+      <label style="margin-bottom:8px; display:block;">分類</label>
+      <div class="chip-row" id="catPicker"></div>
+      <button class="primary-btn" id="addExpenseBtn">＋ 加入紀錄</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-list">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
       <div class="tabs" style="margin-bottom:0; width:130px; padding:4px;">
         <div class="tab active" id="listTabMonth" style="padding:4px 2px;">月份</div>
