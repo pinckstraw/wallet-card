@@ -291,7 +291,7 @@
   </div>
 
   <div class="panel" id="panel-chart">
-    <div class="chart-card">
+    <div class="chart-card" id="chartCard">
       
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
         <h2 style="margin:0; font-family:'Baloo 2',sans-serif; font-size:16px;">佔比分析</h2>
@@ -1008,6 +1008,28 @@
       $('panel-'+tab.dataset.tab).classList.add('active');
     };
   });
+
+  function attachSwipeNav(el, onSwipeLeftNext, onSwipeRightPrev){
+    let sx = 0, sy = 0, active = false;
+    el.addEventListener('touchstart', (e) => {
+      sx = e.touches[0].clientX;
+      sy = e.touches[0].clientY;
+      active = true;
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      if(!active) return;
+      active = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - sx;
+      const dy = t.clientY - sy;
+      if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5){
+        if(dx < 0) onSwipeLeftNext(); else onSwipeRightPrev();
+      }
+    }, { passive: true });
+  }
+
+  attachSwipeNav($('listContent'), () => $('listNextBtn').click(), () => $('listPrevBtn').click());
+  attachSwipeNav($('chartCard'), () => $('chartNextBtn').click(), () => $('chartPrevBtn').click());
 
   $('editCancelBtn').onclick = () => $('editModalOverlay').classList.remove('show');
   $('editSaveBtn').onclick = () => {
