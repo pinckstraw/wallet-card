@@ -66,22 +66,22 @@
 
   .card-hero{
     border-radius:var(--radius-lg);
-    padding:20px 20px 18px;
+    padding:16px 18px 16px;
     color:var(--ink);
     margin-bottom:16px;
     position:relative;
   }
-  .card-hero .ch-top{display:flex; justify-content:space-between; align-items:flex-start;}
+  .card-hero .ch-top{display:flex; justify-content:space-between; align-items:center;}
   .card-hero .ch-name{font-family:'Baloo 2',sans-serif; font-weight:700; font-size:15px;}
   .card-hero .ch-amount{
-    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:32px; margin-top:10px; line-height:1;
+    font-family:'JetBrains Mono',monospace; font-weight:700; font-size:32px; margin-top:8px; line-height:1;
   }
   .card-hero .ch-amount small{font-size:15px; font-weight:600; opacity:.7; margin-right:2px;}
   .card-hero .ch-sub{font-size:11px; opacity:.65; margin-top:6px;}
   .pay-btn{
-    margin-top:14px; border:none; border-radius:14px;
+    border:none; border-radius:12px; flex-shrink:0;
     background:rgba(74,46,61,0.14); color:var(--ink); font-family:'Baloo 2',sans-serif;
-    font-weight:700; font-size:13px; padding:10px 16px; cursor:pointer;
+    font-weight:700; font-size:13px; padding:8px 16px; cursor:pointer;
   }
   .pay-btn:active{transform:scale(.97);}
 
@@ -242,11 +242,11 @@
   <div class="panel active" id="panel-overview">
     <div class="card-hero" style="background:var(--pink);">
       <div class="ch-top">
-        <div><div class="ch-name">總計待收款</div></div>
+        <div class="ch-name">總計待收款</div>
+        <button class="pay-btn" id="globalPayBtn">繳費</button>
       </div>
       <div class="ch-amount"><small>NT$</small><span id="heroTotal">0</span></div>
       <div class="ch-sub" id="heroLastPay">尚未有繳費紀錄</div>
-      <button class="pay-btn" id="globalPayBtn">登記繳費 / 扣款</button>
     </div>
 
     <div class="add-card">
