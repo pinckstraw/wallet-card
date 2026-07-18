@@ -242,7 +242,7 @@
   <div class="panel active" id="panel-overview">
     <div class="card-hero" style="background:var(--pink);">
       <div class="ch-top">
-        <div class="ch-name">總計待收款</div>
+        <div class="ch-name" id="heroLabel">總計待收款</div>
         <button class="pay-btn" id="globalPayBtn">繳費</button>
       </div>
       <div class="ch-amount"><small>NT$</small><span id="heroTotal">0</span></div>
@@ -448,6 +448,14 @@
     </div>
 
     <div class="field" style="margin-bottom:12px;">
+      <label>總覽金額顯示方式</label>
+      <div class="chip-row" id="displayModePicker" style="margin-bottom:0;">
+        <div class="chip" data-mode="balance">累積待收款</div>
+        <div class="chip" data-mode="monthly">本月消費總額</div>
+      </div>
+    </div>
+
+    <div class="field" style="margin-bottom:12px;">
       <label>Web App 網址</label>
       <input type="text" id="webhookInput" placeholder="https://script.google.com/macros/s/.../exec">
     </div>
@@ -472,6 +480,7 @@
     webhookUrl: localStorage.getItem('walletcard_webhook') || '',
     token: localStorage.getItem('walletcard_token') || '',
     startDay: parseInt(localStorage.getItem('walletcard_startDay')) || 1,
+    displayMode: localStorage.getItem('walletcard_displayMode') || 'balance',
     expenses: [],
     categories: [],
     selectedCat: null,
@@ -581,10 +590,23 @@
     renderChart();
   }
 
+  function monthlyTotal(){
+    const { dStart, dEnd } = getPeriodRange('month', new Date(), state.startDay);
+    const startStr = formatD(dStart), endStr = formatD(dEnd);
+    return state.expenses
+      .filter(e => e.type === 'expense' && e.date >= startStr && e.date <= endStr)
+      .reduce((sum, e) => sum + Number(e.amount), 0);
+  }
+
   function renderHero(){
-    const bal = totalBalance();
     const last = globalLastPaymentDate();
-    $('heroTotal').textContent = fmt(Math.max(bal, 0));
+    if(state.displayMode === 'monthly'){
+      $('heroLabel').textContent = '本月消費總額';
+      $('heroTotal').textContent = fmt(monthlyTotal());
+    } else {
+      $('heroLabel').textContent = '總計待收款';
+      $('heroTotal').textContent = fmt(Math.max(totalBalance(), 0));
+    }
     $('heroLastPay').textContent = last ? '上次繳費紀錄：' + last : '尚未有繳費紀錄';
   }
 
@@ -1072,10 +1094,22 @@
     apiPost('addCategory', { name, color: state.newCatColor }).then(res => { if(res){ $('newCatName').value=''; toast('已新增分類'); } });
   };
 
+  function renderDisplayModePicker(){
+    document.querySelectorAll('#displayModePicker [data-mode]').forEach(chip => {
+      const isActive = chip.dataset.mode === state.displayMode;
+      chip.classList.toggle('active', isActive);
+      chip.style.background = isActive ? 'var(--yellow)' : '';
+    });
+  }
+  document.querySelectorAll('#displayModePicker [data-mode]').forEach(chip => {
+    chip.onclick = () => { state.displayMode = chip.dataset.mode; renderDisplayModePicker(); };
+  });
+
   $('settingsBtn').onclick = () => {
     $('webhookInput').value = state.webhookUrl;
     $('tokenInput').value = state.token;
     $('startDayInput').value = state.startDay;
+    renderDisplayModePicker();
     setConn(!!state.webhookUrl);
     $('settingsModalOverlay').classList.add('show');
   };
@@ -1098,7 +1132,9 @@
     localStorage.setItem('walletcard_webhook', url);
     localStorage.setItem('walletcard_token', token);
     localStorage.setItem('walletcard_startDay', sDay);
+    localStorage.setItem('walletcard_displayMode', state.displayMode);
     
+    renderHero();
     renderChart();
     renderList();
     apiGet().then(()=> { toast('已儲存設定'); $('settingsModalOverlay').classList.remove('show'); });
