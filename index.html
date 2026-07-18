@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>信用卡消費紀錄</title>
+<title>消費記錄</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -228,7 +228,7 @@
 <div id="app">
 
   <div class="top-bar">
-    <div class="brand">信用卡<span>消費紀錄</span></div>
+    <div class="brand"><span>消費記錄</span></div>
     <div class="icon-btn" id="settingsBtn">⚙</div>
   </div>
 
@@ -711,7 +711,10 @@
   let draggingCatId = null;
 
   function startCategoryDrag(catId, cardEl, clientX, clientY){
+    if(draggingCatId) return; // a drag is already in progress, ignore
     draggingCatId = catId;
+    cardEl.classList.add('dragging');
+
     const rect = cardEl.getBoundingClientRect();
     const ghost = cardEl.cloneNode(true);
     ghost.classList.add('drag-ghost');
@@ -722,44 +725,49 @@
     ghost.style.zIndex = 200;
     ghost.style.pointerEvents = 'none';
     document.body.appendChild(ghost);
-    renderCategories();
 
     const offsetX = clientX - rect.left;
     const offsetY = clientY - rect.top;
+    let finished = false;
 
     function onMove(e){
-      const cx = e.clientX, cy = e.clientY;
-      ghost.style.left = (cx - offsetX) + 'px';
-      ghost.style.top = (cy - offsetY) + 'px';
-      ghost.style.visibility = 'hidden';
-      const el = document.elementFromPoint(cx, cy);
-      ghost.style.visibility = '';
-      const overCard = el && el.closest('.manage-card');
-      if(overCard && overCard.dataset.catid !== draggingCatId){
-        const ids = state.categories.map(c => c.id);
-        const fromIdx = ids.indexOf(draggingCatId);
-        const toIdx = ids.indexOf(overCard.dataset.catid);
-        if(fromIdx !== -1 && toIdx !== -1){
-          const reordered = [...state.categories];
-          const [moved] = reordered.splice(fromIdx, 1);
-          reordered.splice(toIdx, 0, moved);
-          state.categories = reordered;
-          renderCategories();
-        }
-      }
+      ghost.style.left = (e.clientX - offsetX) + 'px';
+      ghost.style.top = (e.clientY - offsetY) + 'px';
     }
 
-    function onUp(){
+    function finish(e){
+      if(finished) return;
+      finished = true;
       document.removeEventListener('pointermove', onMove);
-      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointerup', finish);
+      document.removeEventListener('pointercancel', finish);
       ghost.remove();
+
+      const cx = e.clientX, cy = e.clientY;
+      if(typeof cx === 'number' && typeof cy === 'number'){
+        const el = document.elementFromPoint(cx, cy);
+        const overCard = el && el.closest('.manage-card');
+        if(overCard && overCard.dataset.catid && overCard.dataset.catid !== catId){
+          const ids = state.categories.map(c => c.id);
+          const fromIdx = ids.indexOf(catId);
+          const toIdx = ids.indexOf(overCard.dataset.catid);
+          if(fromIdx !== -1 && toIdx !== -1){
+            const reordered = [...state.categories];
+            const [moved] = reordered.splice(fromIdx, 1);
+            reordered.splice(toIdx, 0, moved);
+            state.categories = reordered;
+          }
+        }
+      }
+
       draggingCatId = null;
       renderCategories();
       apiPost('reorderCategories', { order: state.categories.map(c => c.id) });
     }
 
     document.addEventListener('pointermove', onMove);
-    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointerup', finish);
+    document.addEventListener('pointercancel', finish);
   }
 
   let colorPickTargetId = null;
