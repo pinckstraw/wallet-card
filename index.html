@@ -538,6 +538,7 @@
   }
   function fmt(n){ return Math.round(n).toLocaleString('zh-TW'); }
   function todayStr(){ return new Date().toISOString().slice(0,10); }
+  function firstChar(str){ return [...(str || '')][0] || ''; }
 
   function withLoading(btn, fn){
     if(btn.disabled) return Promise.resolve(null);
@@ -718,7 +719,7 @@
       }
       const cat = categoryById(e.categoryId);
       return '<div class="list-item">'
-        + '<div class="cat-dot" style="background:'+cat.color+'55;">'+cat.name.slice(0,1)+'</div>'
+        + '<div class="cat-dot" style="background:'+cat.color+'55;">'+firstChar(cat.name)+'</div>'
         + '<div class="li-main">'
           + '<div class="li-cat">'+cat.name+'</div>'
           + '<div class="li-note">'+(e.note || '（無備註）')+'</div>'
