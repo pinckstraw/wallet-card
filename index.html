@@ -104,6 +104,15 @@
   
   /* 恢復為原本的加入紀錄分類樣式 (依照寬度自動換行) */
   .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .quick-fill-row{
+    display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .quick-fill-row::-webkit-scrollbar{ display:none; }
+  .quick-fill-chip{
+    flex-shrink:0; padding:6px 12px; border-radius:16px; font-size:12px; font-weight:600;
+    background:var(--cream); color:var(--ink-soft); white-space:nowrap; cursor:pointer;
+  }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:13px; font-weight:600;
     border:1.5px solid var(--line); background:#fff; cursor:pointer; color:var(--ink-soft);
@@ -280,6 +289,7 @@
           <input type="date" id="dateInput">
         </div>
       </div>
+      <div class="quick-fill-row" id="recentNotesPicker"></div>
       <div class="field" style="margin-bottom:12px;">
         <label>備註</label>
         <input type="text" id="noteInput" placeholder="例如：午餐、捷運、網購…">
@@ -372,6 +382,7 @@
         <input type="date" id="fabDateInput">
       </div>
     </div>
+    <div class="quick-fill-row" id="fabRecentNotesPicker"></div>
     <div class="field" style="margin-bottom:10px;">
       <label>備註</label>
       <input type="text" id="fabNoteInput" placeholder="例如：午餐、捷運、網購…">
@@ -604,6 +615,7 @@
   function renderAll(){
     renderHero();
     renderPickers();
+    renderRecentNotes();
     renderList();
     renderCategories();
     renderChart();
@@ -640,6 +652,41 @@
         if(sel === cat.id) chip.style.background = cat.color;
         chip.textContent = cat.name;
         chip.onclick = () => { if(isEdit) state.editSelectedCat = cat.id; else state.selectedCat = cat.id; renderPickers(); };
+        el.appendChild(chip);
+      });
+    });
+  }
+
+  function recentNoteEntries(){
+    const seen = new Set();
+    const out = [];
+    const items = [...state.expenses]
+      .filter(e => e.type === 'expense' && e.note && e.note.trim())
+      .sort((a,b)=> (b.createdAt||b.date).localeCompare(a.createdAt||a.date));
+    for(const e of items){
+      if(seen.has(e.note)) continue;
+      seen.add(e.note);
+      out.push({ note: e.note, categoryId: e.categoryId });
+      if(out.length >= 8) break;
+    }
+    return out;
+  }
+
+  function renderRecentNotes(){
+    const entries = recentNoteEntries();
+    ['recentNotesPicker','fabRecentNotesPicker'].forEach(pid => {
+      const el = $(pid);
+      const isFab = pid === 'fabRecentNotesPicker';
+      el.innerHTML = '';
+      entries.forEach(entry => {
+        const chip = document.createElement('div');
+        chip.className = 'quick-fill-chip';
+        chip.textContent = entry.note;
+        chip.onclick = () => {
+          $(isFab ? 'fabNoteInput' : 'noteInput').value = entry.note;
+          state.selectedCat = entry.categoryId;
+          renderPickers();
+        };
         el.appendChild(chip);
       });
     });
