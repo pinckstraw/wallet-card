@@ -105,13 +105,11 @@
   /* 恢復為原本的加入紀錄分類樣式 (依照寬度自動換行) */
   .chip-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
   .quick-fill-row{
-    display:flex; gap:6px; overflow-x:auto; margin-bottom:10px; padding-bottom:2px;
-    -webkit-overflow-scrolling:touch;
+    display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;
   }
-  .quick-fill-row::-webkit-scrollbar{ display:none; }
   .quick-fill-chip{
     flex-shrink:0; padding:6px 12px; border-radius:16px; font-size:12px; font-weight:600;
-    background:var(--cream); color:var(--ink-soft); white-space:nowrap; cursor:pointer;
+    color:var(--ink); white-space:nowrap; cursor:pointer;
   }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:13px; font-weight:600;
@@ -682,6 +680,7 @@
         const chip = document.createElement('div');
         chip.className = 'quick-fill-chip';
         chip.textContent = entry.note;
+        chip.style.background = categoryById(entry.categoryId).color;
         chip.onclick = () => {
           $(isFab ? 'fabNoteInput' : 'noteInput').value = entry.note;
           state.selectedCat = entry.categoryId;
