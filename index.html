@@ -110,6 +110,11 @@
   .quick-fill-chip{
     flex-shrink:0; padding:6px 12px; border-radius:16px; font-size:12px; font-weight:600;
     color:var(--ink); white-space:nowrap; cursor:pointer;
+    border:2px solid transparent; opacity:.72;
+  }
+  .quick-fill-chip.active{
+    border-color:var(--ink); opacity:1; box-shadow:0 2px 6px rgba(74,46,61,.25);
+    transform:scale(1.04);
   }
   .chip{
     padding:7px 13px; border-radius:20px; font-size:13px; font-weight:600;
@@ -512,6 +517,7 @@
     expenses: [],
     categories: [],
     selectedCat: null,
+    selectedQuickNote: null,
     editingId: null,
     editSelectedCat: null,
     newCatColor: CATEGORY_COLORS[0]
@@ -679,13 +685,15 @@
       el.innerHTML = '';
       entries.forEach(entry => {
         const chip = document.createElement('div');
-        chip.className = 'quick-fill-chip';
+        chip.className = 'quick-fill-chip' + (state.selectedQuickNote === entry.note ? ' active' : '');
         chip.textContent = entry.note;
         chip.style.background = categoryById(entry.categoryId).color;
         chip.onclick = () => {
           $(isFab ? 'fabNoteInput' : 'noteInput').value = entry.note;
           state.selectedCat = entry.categoryId;
+          state.selectedQuickNote = entry.note;
           renderPickers();
+          renderRecentNotes();
         };
         el.appendChild(chip);
       });
@@ -1128,6 +1136,15 @@
   $('dateInput').value = todayStr();
   $('fabDateInput').value = todayStr();
 
+  ['noteInput','fabNoteInput'].forEach(id => {
+    $(id).addEventListener('input', () => {
+      if($(id).value !== state.selectedQuickNote){
+        state.selectedQuickNote = null;
+        renderRecentNotes();
+      }
+    });
+  });
+
   $('addExpenseBtn').onclick = () => {
     const amount = parseFloat($('amountInput').value);
     if(!amount || amount <= 0){ toast('請輸入正確的金額'); return; }
@@ -1136,7 +1153,12 @@
       amount, date: $('dateInput').value, note: $('noteInput').value,
       categoryId: state.selectedCat, type: 'expense'
     }).then(res => {
-      if(res){ $('amountInput').value=''; $('noteInput').value=''; $('dateInput').value = todayStr(); toast('已加入紀錄'); }
+      if(res){
+        $('amountInput').value=''; $('noteInput').value=''; $('dateInput').value = todayStr();
+        state.selectedQuickNote = null;
+        renderRecentNotes();
+        toast('已加入紀錄');
+      }
     }));
   };
 
@@ -1144,7 +1166,9 @@
     $('fabAmountInput').value = '';
     $('fabNoteInput').value = '';
     $('fabDateInput').value = todayStr();
+    state.selectedQuickNote = null;
     renderPickers();
+    renderRecentNotes();
     $('quickAddModalOverlay').classList.add('show');
   };
   $('fabCancelBtn').onclick = () => $('quickAddModalOverlay').classList.remove('show');
@@ -1156,7 +1180,11 @@
       amount, date: $('fabDateInput').value, note: $('fabNoteInput').value,
       categoryId: state.selectedCat, type: 'expense'
     }).then(res => {
-      if(res){ $('quickAddModalOverlay').classList.remove('show'); toast('已加入紀錄'); }
+      if(res){
+        state.selectedQuickNote = null;
+        renderRecentNotes();
+        $('quickAddModalOverlay').classList.remove('show'); toast('已加入紀錄');
+      }
     }));
   };
 
